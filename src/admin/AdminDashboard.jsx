@@ -5,8 +5,6 @@ import ManageOrders from "./ManageOrders";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-const navigate = useNavigate();
-const { user, logout } = useAuth();
 
 const menuItems = [
   { name: "Overview", icon: "📊" },
@@ -20,6 +18,9 @@ const recentOrders = [
 ];
 
 function AdminDashboard() {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
   const [activePage, setActivePage] = useState("Overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -82,9 +83,11 @@ function AdminDashboard() {
         </nav>
 
         
+        
+          {/* Shop Owner Profile */}
         <div className="mt-auto shrink-0 border-t border-white/10 p-5">
-
           <button
+            type="button"
             onClick={() => {
               if (user) {
                 navigate("/admin/profile");
@@ -92,7 +95,7 @@ function AdminDashboard() {
                 navigate("/admin-login");
               }
             }}
-            className="flex w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-white/10 transition"
+            className="flex w-full items-center gap-3 rounded-xl p-3 text-left hover:bg-white/10"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-200 text-lg">
               👩
@@ -100,13 +103,17 @@ function AdminDashboard() {
 
             <div>
               <p className="font-semibold">Shop Owner</p>
-              <p className="text-xs text-white/50">Administrator</p>
+              <p className="text-xs text-white/50">
+                Administrator
+              </p>
             </div>
 
             <span className="ml-auto">›</span>
           </button>
-
         </div>
+
+      </aside>
+
 
 
       {/* Main content */}

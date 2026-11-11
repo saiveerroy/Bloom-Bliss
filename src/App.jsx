@@ -4,7 +4,7 @@ import { Routes, Route } from "react-router-dom";
 import CustomerHome from "./CustomerHome";
 import AdminDashboard from "./admin/AdminDashboard";
 import ManageProducts from "./admin/ManageProducts";
-import AdminLogin from "./admin/AdminLogin";
+
 import Checkout from "./pages/Checkout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -12,6 +12,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Profile from "./pages/Profile";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AdminProfile from "./admin/AdminProfile";
+import AdminLogin from "./admin/AdminLogin";
+
 
 
 function App() {
@@ -21,7 +23,10 @@ function App() {
 
       <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
 
-      <Route path="/admin" element={<AdminDashboard />} />
+      {/* Admin Dashboard */}
+<Route path="/admin" element={ <AdminProtectedRoute> <AdminDashboard /> </AdminProtectedRoute>
+  }
+/>
 
       <Route path="/admin/products" element={<ManageProducts />} />
 
@@ -54,6 +59,7 @@ function App() {
       />
 
       <Route path="components/AdminProtectedRoute" element={<AdminProtectedRoute />} />
+
       <Route path="/admin/profile" element={<AdminProtectedRoute><AdminProfile /></AdminProtectedRoute>} />
     
     </Routes>
