@@ -9,10 +9,10 @@ export default function AdminProfile() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  async function handleLogout() {
-    await signOut(adminAuth);
-    navigate("/admin-login", { replace: true });
-  }
+  const handleLogout = async () => {
+  await signOut(adminAuth);
+  navigate("/admin-login", { replace: true });
+};
 
   return (
     <div className="min-h-screen bg-[#fffaf7] p-6 sm:p-10">

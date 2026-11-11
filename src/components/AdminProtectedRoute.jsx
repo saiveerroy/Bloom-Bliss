@@ -1,74 +1,76 @@
 
 import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+
+import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../firebase";
-import { useAuth } from "../context/AuthContext";
+
+import { adminAuth, adminDb } from "../firebase";
 
 export default function AdminProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
-
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [checkingAdmin, setCheckingAdmin] = useState(true);
+  const [admin, setAdmin] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
 
-    async function checkAdmin() {
-      if (loading) return;
+    const unsubscribe = onAuthStateChanged(
+      adminAuth,
+      async (firebaseUser) => {
+        if (!active) return;
 
-      if (!user) {
-        setCheckingAdmin(false);
-        return;
-      }
+        setLoading(true);
+        setError("");
 
-      try {
-        console.log("Signed-in UID:", user.uid);
-        console.log("Firebase auth UID:", auth.currentUser?.uid);
-
-        const adminRef = doc(db, "admins", user.uid);
-        const adminSnap = await getDoc(adminRef);
-
-        console.log("Admin document exists:", adminSnap.exists());
-
-        if (adminSnap.exists()) {
-          console.log("Admin document data:", adminSnap.data());
+        if (!firebaseUser) {
+          setAdmin(null);
+          setLoading(false);
+          return;
         }
 
-        if (active) {
-          setIsAdmin(
+        try {
+          const adminRef = doc(
+            adminDb,
+            "admins",
+            firebaseUser.uid
+          );
+
+          const adminSnap = await getDoc(adminRef);
+
+          if (
             adminSnap.exists() &&
             adminSnap.data().role === "admin"
-          );
+          ) {
+            if (active) setAdmin(firebaseUser);
+          } else {
+            if (active) setAdmin(null);
+          }
+        } catch (err) {
+          console.error("Admin verification error:", err);
+
+          if (active) {
+            setError(err.message);
+            setAdmin(null);
+          }
+        } finally {
+          if (active) setLoading(false);
         }
-
-      } catch (err) {
-        console.error("Admin verification error:", err);
-
-        if (active) {
-          setError(err.message);
-          setIsAdmin(false);
-        }
-
-      } finally {
-        if (active) setCheckingAdmin(false);
       }
-    }
-
-    checkAdmin();
+    );
 
     return () => {
       active = false;
+      unsubscribe();
     };
-  }, [user, loading]);
+  }, []);
 
-  if (loading || checkingAdmin) {
-    return <div className="p-10 text-center">Checking admin access...</div>;
-  }
-
-  if (!user) {
-    return <Navigate to="/admin-login" replace />;
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        Checking administrator access...
+      </div>
+    );
   }
 
   if (error) {
@@ -79,14 +81,8 @@ export default function AdminProtectedRoute({ children }) {
     );
   }
 
-  if (!isAdmin) {
-    return (
-      <div className="p-10 text-center">
-        <h2 className="text-xl font-bold">Admin access denied</h2>
-        <p>Your Firebase account does not have admin permission.</p>
-        <p>Signed-in UID: {user.uid}</p>
-      </div>
-    );
+  if (!admin) {
+    return <Navigate to="/admin-login" replace />;
   }
 
   return children;

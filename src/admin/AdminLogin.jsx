@@ -20,61 +20,57 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleLogin(e) {
-    e.preventDefault();
+  
+async function handleLogin(e) {
+  e.preventDefault();
 
-    setError("");
-    setLoading(true);
+  setError("");
+  setLoading(true);
 
-    try {
-      const credential = await signInWithEmailAndPassword(
-        adminAuth,
-        email.trim(),
-        password
-      );
+  try {
+    const credential = await signInWithEmailAndPassword(
+      adminAuth,
+      email.trim(),
+      password
+    );
 
-      const adminRef = doc(
-        adminDb,
-        "admins",
-        credential.user.uid
-      );
+    const adminRef = doc(
+      adminDb,
+      "admins",
+      credential.user.uid
+    );
 
-      const adminSnap = await getDoc(adminRef);
+    const adminSnap = await getDoc(adminRef);
 
-      if (
-        !adminSnap.exists() ||
-        adminSnap.data().role !== "admin"
-      ) {
-        await signOut(adminAuth);
+    if (!adminSnap.exists() ||
+        adminSnap.data().role !== "admin") {
 
-        setError(
-          "You are not authorized as an administrator."
-        );
+      await signOut(adminAuth);
 
-        return;
-      }
-
-      navigate("/admin", { replace: true });
-
-    } catch (error) {
-        console.error(
-          "ADMIN LOGIN ERROR:",
-          error.code,
-          error.message
-        );
-
-        setError(
-          error.code === "permission-denied"
-            ? "Admin account found, but Firestore permission was denied."
-            : error.code === "auth/invalid-credential"
-            ? "Incorrect admin email or password."
-            : error.message
-        );
-
-    } finally {
-      setLoading(false);
+      setError("You are not authorized as an administrator.");
+      return;
     }
+
+    navigate("/admin", { replace: true });
+
+  } catch (error) {
+    console.error("ADMIN LOGIN ERROR:", error.code, error.message);
+
+    if (error.code === "permission-denied") {
+      setError("Firestore permission denied. Check your admin security rules.");
+    } else if (
+      error.code === "auth/invalid-credential"
+    ) {
+      setError("Incorrect admin email or password.");
+    } else {
+      setError(error.message || "Admin login failed.");
+    }
+
+  } finally {
+    setLoading(false);
   }
+}
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#fffaf7] px-4">
