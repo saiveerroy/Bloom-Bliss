@@ -4,11 +4,13 @@ import { Routes, Route } from "react-router-dom";
 import CustomerHome from "./CustomerHome";
 import AdminDashboard from "./admin/AdminDashboard";
 import ManageProducts from "./admin/ManageProducts";
+import AdminLogin from "./admin/AdminLogin";
 import Checkout from "./pages/Checkout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Profile from "./pages/Profile";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 
 function App() {
@@ -21,6 +23,8 @@ function App() {
       <Route path="/admin" element={<AdminDashboard />} />
 
       <Route path="/admin/products" element={<ManageProducts />} />
+
+      <Route path="/admin-login" element={<AdminLogin />} />
 
       {/* Customer Authentication */}
       <Route path="/login" element={<Login />} />
@@ -47,6 +51,8 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+      <Route path="components/AdminProtectedRoute" element={<AdminProtectedRoute />} />
 
     </Routes>
   );

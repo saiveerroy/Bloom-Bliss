@@ -31,50 +31,66 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   // Listen for Firebase authentication changes
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (firebaseUser) => {
-        setUser(firebaseUser);
+  
+useEffect(() => {
+  let active = true;
 
-        if (firebaseUser) {
-          try {
-            const customerRef = doc(
-              db,
-              "customers",
-              firebaseUser.uid
-            );
+  const unsubscribe = onAuthStateChanged(
+    auth,
+    async (firebaseUser) => {
+      if (!active) return;
 
-            const customerSnap = await getDoc(customerRef);
+      setLoading(true);
+      setUser(firebaseUser);
 
-            setCustomer(
-              customerSnap.exists()
-                ? customerSnap.data()
-                : {
-                    uid: firebaseUser.uid,
-                    name: firebaseUser.displayName || "",
-                    email: firebaseUser.email,
-                  }
-            );
-          } catch (error) {
-            console.error("Profile loading error:", error);
-
-            setCustomer({
-              uid: firebaseUser.uid,
-              name: firebaseUser.displayName || "",
-              email: firebaseUser.email,
-            });
-          }
-        } else {
-          setCustomer(null);
-        }
-
+      if (!firebaseUser) {
+        setCustomer(null);
         setLoading(false);
+        return;
       }
-    );
 
-    return unsubscribe;
-  }, []);
+      try {
+        const customerRef = doc(
+          db,
+          "customers",
+          firebaseUser.uid
+        );
+
+        const customerSnap = await getDoc(customerRef);
+
+        if (!active) return;
+
+        setCustomer(
+          customerSnap.exists()
+            ? customerSnap.data()
+            : {
+                uid: firebaseUser.uid,
+                name: firebaseUser.displayName || "",
+                email: firebaseUser.email,
+              }
+        );
+      } catch (error) {
+        console.error("Profile loading error:", error);
+
+        if (active) {
+          setCustomer({
+            uid: firebaseUser.uid,
+            name: firebaseUser.displayName || "",
+            email: firebaseUser.email,
+          });
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+  );
+
+  return () => {
+    active = false;
+    unsubscribe();
+  };
+}, []);
+
 
   // CUSTOMER REGISTRATION
   const register = async (name, email, password) => {
@@ -142,7 +158,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+    {children}
     </AuthContext.Provider>
   );
 }
