@@ -23,14 +23,11 @@ function App() {
 
       <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
 
-      {/* Admin Dashboard */}
-<Route path="/admin" element={ <AdminProtectedRoute> <AdminDashboard /> </AdminProtectedRoute>
-  }
-/>
-
-      <Route path="/admin/products" element={<ManageProducts />} />
-
+            {/* Admin Dashboard */}
+      <Route path="/admin" element={ <AdminProtectedRoute> <AdminDashboard /> </AdminProtectedRoute> }/>
+      <Route path="/admin/profile" element={<AdminProtectedRoute><AdminProfile /></AdminProtectedRoute>} />
       <Route path="/admin-login" element={<AdminLogin />} />
+      <Route path="/admin/products" element={<ManageProducts />} />
 
       {/* Customer Authentication */}
       <Route path="/login" element={<Login />} />
@@ -60,7 +57,7 @@ function App() {
 
       <Route path="components/AdminProtectedRoute" element={<AdminProtectedRoute />} />
 
-      <Route path="/admin/profile" element={<AdminProtectedRoute><AdminProfile /></AdminProtectedRoute>} />
+      
     
     </Routes>
   );

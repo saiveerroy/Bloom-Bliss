@@ -12,12 +12,13 @@ const firebaseConfig = {
   measurementId: "G-VP7HXX5RYV"
 };
 
+// CUSTOMER APP
 const app =
   getApps().find((item) => item.name === "[DEFAULT]") ||
   initializeApp(firebaseConfig);
 
-export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const db = getFirestore(app);
 
 // ADMIN APP
 const adminApp =
@@ -26,3 +27,11 @@ const adminApp =
 
 export const adminAuth = getAuth(adminApp);
 export const adminDb = getFirestore(adminApp);
+
+console.log("Customer app:", auth.app.name);
+console.log("Admin app:", adminAuth.app.name);
+
+console.log(
+  "Are authentication instances the same?",
+  auth === adminAuth
+);

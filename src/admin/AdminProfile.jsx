@@ -1,22 +1,54 @@
 
-import React from "react";
-import { useAuth } from "../context/AuthContext";
-import { signOut } from "firebase/auth";
+import React, { useEffect, useState } from "react";
+
+import { onAuthStateChanged, signOut } from "firebase/auth";
+
 import { adminAuth } from "../firebase";
+
 import { useNavigate } from "react-router-dom";
 
 export default function AdminProfile() {
-  const { user } = useAuth();
   const navigate = useNavigate();
 
+  const [admin, setAdmin] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(
+      adminAuth,
+      (user) => {
+        setAdmin(user);
+        setLoading(false);
+      }
+    );
+
+    return unsubscribe;
+  }, []);
+
   const handleLogout = async () => {
-  await signOut(adminAuth);
-  navigate("/admin-login", { replace: true });
-};
+    try {
+      await signOut(adminAuth);
+      navigate("/admin-login", { replace: true });
+    } catch (error) {
+      console.error("Admin logout error:", error);
+      alert("Unable to logout. Please try again.");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        Loading administrator profile...
+      </div>
+    );
+  }
+
+  if (!admin) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[#fffaf7] p-6 sm:p-10">
-
       <div className="mx-auto max-w-2xl">
 
         <h1 className="mb-2 text-3xl font-bold text-[#382b2b]">
@@ -50,7 +82,7 @@ export default function AdminProfile() {
                 Email Address
               </p>
               <p className="font-semibold">
-                {user?.email || "Not available"}
+                {admin.email || "Not available"}
               </p>
             </div>
 
@@ -59,7 +91,7 @@ export default function AdminProfile() {
                 Administrator UID
               </p>
               <p className="break-all text-sm font-medium">
-                {user?.uid}
+                {admin.uid}
               </p>
             </div>
 
