@@ -6,13 +6,13 @@ export default function ManageOrders() {
   const { orders, updateOrderStatus } = useInventory();
 
   const statuses = [
-    "Pending",
-    "Confirmed",
-    "Preparing",
-    "Out for Delivery",
-    "Delivered",
-    "Cancelled",
-  ];
+      "pending",
+      "confirmed",
+      "preparing",
+      "out_for_delivery",
+      "delivered",
+      "cancelled",
+    ];
 
   return (
     <div className="min-h-screen bg-[#fffaf7] p-5 sm:p-8">
@@ -46,7 +46,7 @@ export default function ManageOrders() {
         <div className="space-y-6">
 
           {orders.slice().reverse().map((order) => {
-            const customer = order.customer || {};
+            const customer = order.shippingAddress || {};
 
             return (
               <div
@@ -87,7 +87,7 @@ export default function ManageOrders() {
 
                     <p>
                       <strong>Mobile:</strong>{" "}
-                      {customer.mobile || "Not provided"}
+                      {customer.phone || "Not provided"}
                     </p>
 
                     <p>
