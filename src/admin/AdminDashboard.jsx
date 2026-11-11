@@ -2,6 +2,11 @@
 import { useState } from "react";
 import ManageProducts from "./ManageProducts";
 import ManageOrders from "./ManageOrders";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+
+const navigate = useNavigate();
+const { user, logout } = useAuth();
 
 const menuItems = [
   { name: "Overview", icon: "📊" },
@@ -76,18 +81,33 @@ function AdminDashboard() {
           ))}
         </nav>
 
+        
         <div className="mt-auto shrink-0 border-t border-white/10 p-5">
-          <div className="flex items-center gap-3">
+
+          <button
+            onClick={() => {
+              if (user) {
+                navigate("/admin/profile");
+              } else {
+                navigate("/admin-login");
+              }
+            }}
+            className="flex w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-white/10 transition"
+          >
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-200 text-lg">
               👩
             </div>
+
             <div>
               <p className="font-semibold">Shop Owner</p>
               <p className="text-xs text-white/50">Administrator</p>
             </div>
-          </div>
+
+            <span className="ml-auto">›</span>
+          </button>
+
         </div>
-      </aside>
+
 
       {/* Main content */}
       <main className="min-h-screen lg:ml-64">

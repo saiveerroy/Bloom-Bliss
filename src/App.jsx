@@ -11,6 +11,7 @@ import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Profile from "./pages/Profile";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import AdminProfile from "./admin/AdminProfile";
 
 
 function App() {
@@ -53,7 +54,8 @@ function App() {
       />
 
       <Route path="components/AdminProtectedRoute" element={<AdminProtectedRoute />} />
-
+      <Route path="/admin/profile" element={<AdminProtectedRoute><AdminProfile /></AdminProtectedRoute>} />
+    
     </Routes>
   );
 }
