@@ -19,7 +19,14 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 
-import { db } from "../firebase";
+import {
+  auth,
+  db,
+  adminAuth,
+  adminDb,
+} from "../firebase";
+
+import { onAuthStateChanged } from "firebase/auth";
 
 const InventoryContext = createContext(null);
 
@@ -31,54 +38,81 @@ export function InventoryProvider({ children }) {
 
   // LISTEN TO PRODUCTS
   useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, "products"),
-      (snapshot) => {
-        const productList = snapshot.docs.map((item) => ({
-          id: item.id,
-          ...item.data(),
-        }));
+  const unsubscribe = onSnapshot(
+    collection(db, "products"),
+    (snapshot) => {
+      const productList = snapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      }));
 
-        setProducts(productList);
-        setLoading(false);
-        setError("");
-      },
-      (error) => {
-        console.error("Products loading error:", error);
-        setError(error.message);
-        setLoading(false);
-      }
-    );
+      console.log("Firestore products:", productList);
 
-    return unsubscribe;
+      setProducts(productList);
+      setLoading(false);
+    },
+    (error) => {
+      console.error("Products loading error:", error);
+      setError(error.message);
+      setLoading(false);
+    }
+  );
+
+    return () => unsubscribe();
   }, []);
 
-  // LISTEN TO ORDERS
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      query(
-        collection(db, "orders"),
-        orderBy("createdAt", "desc")
-      ),
-      (snapshot) => {
-        const orderList = snapshot.docs.map((item) => ({
-          id: item.id,
-          ...item.data(),
-        }));
 
-        setOrders(orderList);
-      },
-      (error) => {
-        console.error("Orders loading error:", error);
-      }
-    );
+  // LISTEN TO ADMIN ORDERS
+      useEffect(() => {
+        let ordersUnsubscribe = null;
 
-    return unsubscribe;
-  }, []);
+        const authUnsubscribe = onAuthStateChanged(
+          adminAuth,
+          (adminUser) => {
+            if (ordersUnsubscribe) {
+              ordersUnsubscribe();
+              ordersUnsubscribe = null;
+            }
+
+            if (!adminUser) {
+              setOrders([]);
+              return;
+            }
+
+            const ordersQuery = query(
+              collection(adminDb, "orders"),
+              orderBy("createdAt", "desc")
+            );
+
+            ordersUnsubscribe = onSnapshot(
+              ordersQuery,
+              (snapshot) => {
+                const orderList = snapshot.docs.map((item) => ({
+                  id: item.id,
+                  ...item.data(),
+                }));
+
+                setOrders(orderList);
+              },
+              (error) => {
+                console.error("Admin orders loading error:", error);
+              }
+            );
+          }
+        );
+
+        return () => {
+          authUnsubscribe();
+
+          if (ordersUnsubscribe) {
+            ordersUnsubscribe();
+          }
+        };
+      }, []);;
 
   // ADD PRODUCT
   const addProduct = async (product) => {
-    return await addDoc(collection(db, "products"), {
+    return await addDoc(collection(adminDb, "products"), {
       ...product,
       price: Number(product.price),
       stock: Number(product.stock),
@@ -88,7 +122,7 @@ export function InventoryProvider({ children }) {
 
   // EDIT PRODUCT
   const editProduct = async (id, updatedProduct) => {
-    return await updateDoc(doc(db, "products", id), {
+    return await updateDoc(doc(adminDb, "products", id), {
       ...updatedProduct,
       price: Number(updatedProduct.price),
       stock: Number(updatedProduct.stock),
@@ -112,7 +146,7 @@ export function InventoryProvider({ children }) {
 
   // DELETE PRODUCT
   const deleteProduct = async (id) => {
-    return await deleteDoc(doc(db, "products", id));
+    return await deleteDoc(doc(adminDb, "products", id));
   };
 
   // PLACE ORDER
@@ -222,11 +256,15 @@ export function InventoryProvider({ children }) {
   };
 
   // UPDATE ORDER STATUS
+  // UPDATE ORDER STATUS (ADMIN)
   const updateOrderStatus = async (orderId, status) => {
-    return await updateDoc(doc(db, "orders", orderId), {
-      status,
-      updatedAt: serverTimestamp(),
-    });
+    return await updateDoc(
+      doc(adminDb, "orders", orderId),
+      {
+        status,
+        updatedAt: serverTimestamp(),
+      }
+    );
   };
 
   return (

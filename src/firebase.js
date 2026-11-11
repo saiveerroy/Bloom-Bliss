@@ -1,6 +1,11 @@
+
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import {
+  getAuth,
+  setPersistence,
+  browserLocalPersistence,
+} from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -13,14 +18,13 @@ const firebaseConfig = {
   measurementId: "G-VP7HXX5RYV"
 };
 
-// CUSTOMER Firebase APP
+// CUSTOMER APP
 const app =
   getApps().find((item) => item.name === "[DEFAULT]") ||
   initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const storage = getStorage(app);
 
 // ADMIN APP
 const adminApp =
@@ -29,4 +33,17 @@ const adminApp =
 
 export const adminAuth = getAuth(adminApp);
 export const adminDb = getFirestore(adminApp);
-export const adminStorage = getStorage(adminApp);
+
+// STORAGE
+export const storage = getStorage(app);
+
+// Separate login sessions
+export const customerAuthReady = setPersistence(
+  auth,
+  browserLocalPersistence
+);
+
+export const adminAuthReady = setPersistence(
+  adminAuth,
+  browserLocalPersistence
+);

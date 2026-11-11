@@ -21,7 +21,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 
-import { auth, db } from "../firebase";
+import { auth, db, customerAuthReady } from "../firebase";
 
 const AuthContext = createContext(null);
 
@@ -94,6 +94,7 @@ useEffect(() => {
 
   // CUSTOMER REGISTRATION
   const register = async (name, email, password) => {
+    await customerAuthReady;
     const credential = await createUserWithEmailAndPassword(
       auth,
       email.trim(),
@@ -126,14 +127,16 @@ useEffect(() => {
 
   // CUSTOMER LOGIN
   const login = async (email, password) => {
-    const credential = await signInWithEmailAndPassword(
-      auth,
-      email.trim(),
-      password
-    );
+  await customerAuthReady;
 
-    return credential.user;
-  };
+  const credential = await signInWithEmailAndPassword(
+    auth,
+    email.trim(),
+    password
+  );
+
+  return credential.user;
+};
 
   // CUSTOMER LOGOUT
   const logout = async () => {

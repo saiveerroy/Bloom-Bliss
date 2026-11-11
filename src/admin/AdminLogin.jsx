@@ -8,7 +8,7 @@ import {
 
 import { doc, getDoc } from "firebase/firestore";
 
-import { adminAuth, adminDb } from "../firebase";
+import { adminAuth, adminDb, adminAuthReady } from "../firebase";
 
 import { useNavigate } from "react-router-dom";
 
@@ -21,18 +21,20 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
 
   
-async function handleLogin(e) {
-  e.preventDefault();
+    async function handleLogin(e) {
+      e.preventDefault();
 
-  setError("");
-  setLoading(true);
+      setError("");
+      setLoading(true);
 
-  try {
-    const credential = await signInWithEmailAndPassword(
-      adminAuth,
-      email.trim(),
-      password
-    );
+      try {
+        await adminAuthReady;
+
+        const credential = await signInWithEmailAndPassword(
+          adminAuth,
+          email.trim(),
+          password
+        );
 
     const adminRef = doc(
       adminDb,

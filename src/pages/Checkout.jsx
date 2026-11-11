@@ -4,13 +4,7 @@ import { useInventory } from "../context/InventoryContext";
 import { useAuth } from "../context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
 
-import { db } from "../firebase";
 
 export default function Checkout() {
   const { placeOrder } = useInventory();
@@ -87,61 +81,29 @@ export default function Checkout() {
       // STEP 1: Update inventory and validate stock
       const result = await placeOrder(
         cart.map((item) => ({
-          productId: item.id,
-          quantity: item.quantity,
+          productId: String(item.id),
+          quantity: Number(item.quantity),
         })),
-        customer
+        {
+          uid: user.uid,
+          name: customer.name.trim(),
+          email: customer.email.trim(),
+          mobile: customer.mobile.trim(),
+          pincode: customer.pincode.trim(),
+          address: customer.address.trim(),
+        }
       );
 
-      if (!result || !result.success) {
-        throw new Error(
-          result?.message || "Unable to process your order."
-        );
+      if (!result.success) {
+        throw new Error(result.message);
       }
 
-      // STEP 2: Prepare order items
-      const orderItems = cart.map((item) => ({
-        id: item.id,
-        productId: item.id,
-        name: item.name,
-        image: item.image || "",
-        price: Number(item.price),
-        quantity: Number(item.quantity),
-      }));
-
-      // STEP 3: Prepare shipping details
-      const shippingAddress = {
-        name: customer.name.trim(),
-        phone: customer.mobile.trim(),
-        email: customer.email.trim(),
-        address: customer.address.trim(),
-        pincode: customer.pincode.trim(),
-      };
-
-      // STEP 4: SAVE ORDER TO FIREBASE
-      const orderData = {
-        userId: user.uid,
-        customerName: customer.name.trim(),
-        customerEmail: user.email,
-        items: orderItems,
-        total: total,
-        status: "pending",
-        paymentMethod: "Cash on Delivery",
-        shippingAddress: shippingAddress,
-        createdAt: serverTimestamp(),
-      };
-
-      const orderRef = await addDoc(
-        collection(db, "orders"),
-        orderData
-      );
-
-      // STEP 5: Redirect after successful save
+      // Redirect after successful order placement
       navigate("/", {
         replace: true,
         state: {
           orderSuccess: {
-            id: orderRef.id,
+            id: result.orderId,
           },
         },
       });
