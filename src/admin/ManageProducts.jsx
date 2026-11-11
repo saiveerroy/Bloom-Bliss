@@ -81,6 +81,9 @@ export default function ManageProducts() {
         );
 
         const result = await response.json();
+        
+        console.log("Cloudinary response:", result);
+        console.log("Cloudinary image URL:", result.secure_url);
 
         if (!response.ok) {
           throw new Error(
@@ -121,7 +124,7 @@ export default function ManageProducts() {
 
   async function handleSubmit(e) {
   e.preventDefault();
-  
+
     if (uploading) {
     alert("Please wait for the image upload to finish.");
     return;
