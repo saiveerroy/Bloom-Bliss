@@ -13,7 +13,7 @@ import Profile from "./pages/Profile";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AdminProfile from "./admin/AdminProfile";
 import AdminLogin from "./admin/AdminLogin";
-
+import ProductDetails from "./pages/ProductDetails";
 
 
 function App() {
@@ -27,11 +27,22 @@ function App() {
       <Route path="/admin" element={ <AdminProtectedRoute> <AdminDashboard /> </AdminProtectedRoute> }/>
       <Route path="/admin/profile" element={<AdminProtectedRoute><AdminProfile /></AdminProtectedRoute>} />
       <Route path="/admin-login" element={<AdminLogin />} />
-      <Route path="/admin/products" element={<ManageProducts />} />
+     <Route
+        path="/admin/products"
+        element={
+          <AdminProtectedRoute>
+            <ManageProducts />
+          </AdminProtectedRoute>
+        }
+      />
 
       {/* Customer Authentication */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route
+        path="/product/:id"
+        element={<ProductDetails />}
+      />
 
       <Route
         path="*"

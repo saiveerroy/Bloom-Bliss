@@ -415,9 +415,13 @@ function Products({
                     {product.category}
                   </p>
 
-                  <h3 className="mt-2 font-serif text-lg">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/product/${product.id}`)}
+                    className="mt-2 text-left font-serif text-lg hover:text-[#c77f82]"
+                  >
                     {product.name}
-                  </h3>
+                  </button>
 
                   <p className="mt-2 text-sm font-semibold">
                     ₹{Number(product.price).toLocaleString("en-IN")}
