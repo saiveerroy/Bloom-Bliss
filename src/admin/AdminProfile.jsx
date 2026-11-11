@@ -2,7 +2,7 @@
 import React from "react";
 import { useAuth } from "../context/AuthContext";
 import { signOut } from "firebase/auth";
-import { auth } from "../firebase";
+import { adminAuth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 
 export default function AdminProfile() {
@@ -10,7 +10,7 @@ export default function AdminProfile() {
   const navigate = useNavigate();
 
   async function handleLogout() {
-    await signOut(auth);
+    await signOut(adminAuth);
     navigate("/admin-login", { replace: true });
   }
 

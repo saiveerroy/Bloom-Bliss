@@ -1,11 +1,15 @@
 
 import React, { useState } from "react";
+
 import {
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
+
 import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../firebase";
+
+import { adminAuth, adminDb } from "../firebase";
+
 import { useNavigate } from "react-router-dom";
 
 export default function AdminLogin() {
@@ -23,30 +27,49 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      const result = await signInWithEmailAndPassword(
-        auth,
+      const credential = await signInWithEmailAndPassword(
+        adminAuth,
         email.trim(),
         password
       );
 
-      const adminRef = doc(db, "admins", result.user.uid);
+      const adminRef = doc(
+        adminDb,
+        "admins",
+        credential.user.uid
+      );
+
       const adminSnap = await getDoc(adminRef);
 
       if (
         !adminSnap.exists() ||
         adminSnap.data().role !== "admin"
       ) {
-        await signOut(auth);
-        setError("You are not authorized as an administrator.");
+        await signOut(adminAuth);
+
+        setError(
+          "You are not authorized as an administrator."
+        );
+
         return;
       }
 
       navigate("/admin", { replace: true });
 
     } catch (error) {
-      console.error(error);
+        console.error(
+          "ADMIN LOGIN ERROR:",
+          error.code,
+          error.message
+        );
 
-      setError("Invalid email or password. Please try again.");
+        setError(
+          error.code === "permission-denied"
+            ? "Admin account found, but Firestore permission was denied."
+            : error.code === "auth/invalid-credential"
+            ? "Incorrect admin email or password."
+            : error.message
+        );
 
     } finally {
       setLoading(false);
@@ -59,7 +82,6 @@ export default function AdminLogin() {
       <div className="w-full max-w-md rounded-3xl border border-pink-100 bg-white p-8 shadow-xl">
 
         <div className="mb-8 text-center">
-
           <div className="mb-4 text-5xl">🌸</div>
 
           <h1 className="text-3xl font-bold text-[#382b2b]">
@@ -69,7 +91,6 @@ export default function AdminLogin() {
           <p className="mt-2 text-sm text-gray-500">
             Administrator Login
           </p>
-
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">

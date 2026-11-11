@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
@@ -12,7 +12,17 @@ const firebaseConfig = {
   measurementId: "G-VP7HXX5RYV"
 };
 
-const app = initializeApp(firebaseConfig);
+const app =
+  getApps().find((item) => item.name === "[DEFAULT]") ||
+  initializeApp(firebaseConfig);
 
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+
+// ADMIN APP
+const adminApp =
+  getApps().find((item) => item.name === "ADMIN") ||
+  initializeApp(firebaseConfig, "ADMIN");
+
+export const adminAuth = getAuth(adminApp);
+export const adminDb = getFirestore(adminApp);
