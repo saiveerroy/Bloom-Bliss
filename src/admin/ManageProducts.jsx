@@ -21,71 +21,96 @@ export default function ManageProducts() {
 
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
-  // Convert uploaded image to compressed JPEG
-  function handleImageUpload(e) {
-    const file = e.target.files[0];
+  
+  
+    async function handleImageUpload(e) {
+      const file = e.target.files?.[0];
 
-    if (!file) return;
+      // Allow selecting the same file again
+      e.target.value = "";
 
-    if (!file.type.startsWith("image/")) {
-      alert("Please select a valid image.");
-      return;
-    }
+      if (!file) return;
 
-    const reader = new FileReader();
+      const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+      ];
 
-    reader.onload = (event) => {
-      const img = new Image();
+      if (!allowedTypes.includes(file.type)) {
+        setUploadError("Please select JPG, PNG or WEBP.");
+        return;
+      }
 
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
+      // Maximum image size: 5 MB
+      if (file.size > 5 * 1024 * 1024) {
+        setUploadError("Image must be smaller than 5 MB.");
+        return;
+      }
 
-        const MAX_WIDTH = 1600;
-        const MAX_HEIGHT = 1600;
+      setUploading(true);
+      setUploadError("");
 
-        let width = img.width;
-        let height = img.height;
+      try {
+        const cloudName =
+          import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 
-        const scale = Math.min(
-          MAX_WIDTH / width,
-          MAX_HEIGHT / height,
-          1
+        const uploadPreset =
+          import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+        if (!cloudName || !uploadPreset) {
+          throw new Error(
+            "Cloudinary configuration is missing."
+          );
+        }
+
+        const uploadData = new FormData();
+
+        uploadData.append("file", file);
+        uploadData.append("upload_preset", uploadPreset);
+
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+          {
+            method: "POST",
+            body: uploadData,
+          }
         );
 
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
+        const result = await response.json();
 
-        canvas.width = width;
-        canvas.height = height;
+        if (!response.ok) {
+          throw new Error(
+            result.error?.message || "Image upload failed."
+          );
+        }
 
-        const ctx = canvas.getContext("2d");
-
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const imageData = canvas.toDataURL(
-          "image/jpeg",
-          0.88
-        );
+        if (!result.secure_url) {
+          throw new Error("Cloudinary did not return an image URL.");
+        }
 
         setForm((prev) => ({
           ...prev,
-          image: imageData,
+          image: result.secure_url,
         }));
-      };
 
-      img.onerror = () => {
-        alert("Unable to read this image.");
-      };
+        alert("Product photograph uploaded successfully!");
 
-      img.src = event.target.result;
-    };
+      } catch (error) {
+        console.error("Cloudinary upload error:", error);
 
-    reader.readAsDataURL(file);
+        setUploadError(
+          error.message || "Unable to upload photograph."
+        );
 
-    // Allow selecting the same file again
-    e.target.value = "";
-  }
+      } finally {
+        setUploading(false);
+      }
+    }
+
 
   function handleChange(e) {
     setForm({
@@ -96,6 +121,11 @@ export default function ManageProducts() {
 
   async function handleSubmit(e) {
   e.preventDefault();
+  
+    if (uploading) {
+    alert("Please wait for the image upload to finish.");
+    return;
+  }
 
   const product = {
     ...form,
@@ -243,6 +273,17 @@ export default function ManageProducts() {
           <label className="mb-3 block font-semibold">
             Upload Product Photograph 🌷
           </label>
+          {uploading && (
+              <p className="mt-3 text-sm font-semibold text-[#536b50]">
+                Uploading photograph to Cloudinary... Please wait.
+              </p>
+            )}
+
+            {uploadError && (
+              <p className="mt-3 text-sm text-red-600">
+                {uploadError}
+              </p>
+            )}
 
           <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#536b50] bg-[#f8f5ef] p-8 text-center hover:bg-[#f1eee5]">
 
@@ -260,6 +301,7 @@ export default function ManageProducts() {
               type="file"
               accept="image/jpeg,image/png,image/webp"
               onChange={handleImageUpload}
+              disabled={uploading}
               className="hidden"
             />
 
@@ -300,11 +342,16 @@ export default function ManageProducts() {
 
         <div className="mt-6 flex flex-wrap gap-3">
 
-          <button
+         <button
             type="submit"
-            className="rounded-lg bg-[#536b50] px-6 py-3 text-white hover:bg-[#3e543b]"
+            disabled={uploading}
+            className="rounded-lg bg-[#536b50] px-6 py-3 text-white hover:bg-[#3e543b] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {editingId ? "Update Product" : "Add Product"}
+            {uploading
+              ? "Uploading Image..."
+              : editingId
+              ? "Update Product"
+              : "Add Product"}
           </button>
 
           {editingId && (
