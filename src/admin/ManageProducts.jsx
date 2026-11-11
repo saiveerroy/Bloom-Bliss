@@ -94,39 +94,44 @@ export default function ManageProducts() {
     });
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
+  async function handleSubmit(e) {
+  e.preventDefault();
 
-    const product = {
-      ...form,
-      price: Number(form.price),
-      stock: Number(form.stock),
-    };
+  const product = {
+    ...form,
+    price: Number(form.price),
+    stock: Number(form.stock),
+  };
 
-    if (
-      !product.name.trim() ||
-      !product.category.trim() ||
-      !Number.isFinite(product.price) ||
-      product.price <= 0 ||
-      !Number.isInteger(product.stock) ||
-      product.stock < 0 ||
-      !product.image
-    ) {
-      alert("Please enter valid product details.");
-      return;
-    }
+  if (
+    !product.name.trim() ||
+    !product.category.trim() ||
+    !Number.isFinite(product.price) ||
+    product.price <= 0 ||
+    !Number.isInteger(product.stock) ||
+    product.stock < 0 ||
+    !product.image
+  ) {
+    alert("Please enter valid product details.");
+    return;
+  }
 
+  try {
     if (editingId) {
-      editProduct(editingId, product);
+      await editProduct(editingId, product);
       alert("Product updated successfully!");
     } else {
-      addProduct(product);
-      alert("New product added successfully!");
+      await addProduct(product);
+      alert("Product added successfully!");
     }
 
     setForm(emptyForm);
     setEditingId(null);
+  } catch (error) {
+    console.error(error);
+    alert("Unable to save product. Please try again.");
   }
+}
 
   function handleEdit(product) {
     setEditingId(product.id);
@@ -146,16 +151,16 @@ export default function ManageProducts() {
     });
   }
 
-  function handleDelete(id) {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this product?"
-      )
-    ) {
-      deleteProduct(id);
+  async function handleDelete(id) {
+  if (window.confirm("Are you sure you want to delete this product?")) {
+    try {
+      await deleteProduct(id);
+      alert("Product deleted successfully!");
+    } catch (error) {
+      alert("Unable to delete product.");
     }
   }
-
+}
   return (
     <div className="min-h-screen bg-[#fffaf7] p-5 sm:p-8">
 

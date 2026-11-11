@@ -6,137 +6,117 @@ import {
   useState,
 } from "react";
 
+import {
+  collection,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  query,
+  orderBy,
+  runTransaction,
+  serverTimestamp,
+} from "firebase/firestore";
+
+import { db } from "../firebase";
+
 const InventoryContext = createContext(null);
 
-const initialProducts = [
-  {
-    id: 1,
-    name: "Blush Pink Roses",
-    category: "Romantic Bouquets",
-    price: 1299,
-    stock: 10,
-    image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=800",
-    tag: "Bestseller",
-  },
-  {
-    id: 2,
-    name: "Classic Red Roses",
-    category: "Love & Romance",
-    price: 1499,
-    stock: 10,
-    image: "https://images.unsplash.com/photo-1520763185298-1b434c919102?w=800",
-    tag: "Popular",
-  },
-  {
-    id: 3,
-    name: "White Elegance",
-    category: "Premium Collection",
-    price: 1899,
-    stock: 10,
-    image: "https://images.unsplash.com/photo-1525310072745-f49212b5ac6d?w=800",
-    tag: "New",
-  },
-  {
-    id: 4,
-    name: "Sunshine Bouquet",
-    category: "Birthday Flowers",
-    price: 999,
-    stock: 10,
-    image: "https://images.unsplash.com/photo-1494972308805-463bc619d34b?w=800",
-    tag: "Special",
-  },
-];
-
 export function InventoryProvider({ children }) {
-  const [data, setData] = useState(() => {
-    try {
-      const saved = localStorage.getItem("bloom-inventory");
+  const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-      if (saved) {
-        const parsed = JSON.parse(saved);
-
-        if (
-          parsed &&
-          Array.isArray(parsed.products) &&
-          Array.isArray(parsed.orders)
-        ) {
-          return parsed;
-        }
-      }
-    } catch (error) {
-      console.error("Inventory loading error:", error);
-    }
-
-    return {
-      products: initialProducts,
-      orders: [],
-    };
-  });
-
+  // LISTEN TO PRODUCTS
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        "bloom-inventory",
-        JSON.stringify(data)
-      );
-    } catch (error) {
-      console.error("Inventory saving error:", error);
-      alert("Storage is full. Please use smaller product images.");
-    }
-  }, [data]);
+    const unsubscribe = onSnapshot(
+      collection(db, "products"),
+      (snapshot) => {
+        const productList = snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
 
-  const addProduct = (product) => {
-    const newProduct = {
-      ...product,
-      id: Date.now(),
-    };
+        setProducts(productList);
+        setLoading(false);
+        setError("");
+      },
+      (error) => {
+        console.error("Products loading error:", error);
+        setError(error.message);
+        setLoading(false);
+      }
+    );
 
-    setData((prev) => ({
-      ...prev,
-      products: [...prev.products, newProduct],
-    }));
-  };
+    return unsubscribe;
+  }, []);
 
-  const editProduct = (id, updatedProduct) => {
-    setData((prev) => ({
-      ...prev,
-      products: prev.products.map((product) =>
-        product.id === id
-          ? { ...product, ...updatedProduct, id }
-          : product
+  // LISTEN TO ORDERS
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      query(
+        collection(db, "orders"),
+        orderBy("createdAt", "desc")
       ),
-    }));
+      (snapshot) => {
+        const orderList = snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
+
+        setOrders(orderList);
+      },
+      (error) => {
+        console.error("Orders loading error:", error);
+      }
+    );
+
+    return unsubscribe;
+  }, []);
+
+  // ADD PRODUCT
+  const addProduct = async (product) => {
+    return await addDoc(collection(db, "products"), {
+      ...product,
+      price: Number(product.price),
+      stock: Number(product.stock),
+      createdAt: serverTimestamp(),
+    });
   };
 
-  const updateStock = (id, quantity) => {
+  // EDIT PRODUCT
+  const editProduct = async (id, updatedProduct) => {
+    return await updateDoc(doc(db, "products", id), {
+      ...updatedProduct,
+      price: Number(updatedProduct.price),
+      stock: Number(updatedProduct.stock),
+    });
+  };
+
+  // UPDATE STOCK
+  const updateStock = async (id, quantity) => {
     const stock = Number(quantity);
 
     if (!Number.isInteger(stock) || stock < 0) {
       return false;
     }
 
-    setData((prev) => ({
-      ...prev,
-      products: prev.products.map((product) =>
-        product.id === id
-          ? { ...product, stock }
-          : product
-      ),
-    }));
+    await updateDoc(doc(db, "products", id), {
+      stock,
+    });
 
     return true;
   };
 
-  const deleteProduct = (id) => {
-    setData((prev) => ({
-      ...prev,
-      products: prev.products.filter(
-        (product) => product.id !== id
-      ),
-    }));
+  // DELETE PRODUCT
+  const deleteProduct = async (id) => {
+    return await deleteDoc(doc(db, "products", id));
   };
 
-  const placeOrder = (cart, customer) => {
+  // PLACE ORDER
+  const placeOrder = async (cart, customer) => {
     if (!Array.isArray(cart) || cart.length === 0) {
       return {
         success: false,
@@ -144,115 +124,118 @@ export function InventoryProvider({ children }) {
       };
     }
 
-    const quantities = new Map();
+    try {
+      const quantities = new Map();
 
-    for (const item of cart) {
-      const id = Number(item.productId);
-      const quantity = Number(item.quantity);
+      for (const item of cart) {
+        const id = String(item.productId);
+        const quantity = Number(item.quantity);
 
-      if (
-        !Number.isInteger(id) ||
-        !Number.isInteger(quantity) ||
-        quantity <= 0
-      ) {
-        return {
-          success: false,
-          message: "Invalid product or quantity.",
-        };
+        if (!Number.isInteger(quantity) || quantity <= 0) {
+          throw new Error("Invalid product quantity.");
+        }
+
+        quantities.set(
+          id,
+          (quantities.get(id) || 0) + quantity
+        );
       }
 
-      quantities.set(
-        id,
-        (quantities.get(id) || 0) + quantity
-      );
-    }
+      const orderItems = [];
 
-    // Validate every item before changing any stock.
-    for (const [id, quantity] of quantities) {
-      const product = data.products.find(
-        (p) => p.id === id
-      );
+      const orderRef = doc(collection(db, "orders"));
 
-      if (!product) {
-        return {
-          success: false,
-          message: "A product could not be found.",
-        };
-      }
-
-      if (product.stock < quantity) {
-        return {
-          success: false,
-          message: `Only ${product.stock} units of ${product.name} are available.`,
-        };
-      }
-    }
-
-    const updatedProducts = data.products.map((product) => {
-      const quantity = quantities.get(product.id) || 0;
-
-      return {
-        ...product,
-        stock: product.stock - quantity,
-      };
-    });
-
-    const orderItems = [...quantities].map(
-      ([id, quantity]) => {
-        const product = data.products.find(
-          (p) => p.id === id
+      await runTransaction(db, async (transaction) => {
+        const productRefs = [...quantities.keys()].map(
+          (id) => doc(db, "products", id)
         );
 
-        return {
-          productId: id,
-          name: product.name,
-          price: product.price,
-          quantity,
-        };
-      }
-    );
+        const snapshots = await Promise.all(
+          productRefs.map((ref) => transaction.get(ref))
+        );
 
-    const order = {
-      id: "BB" + Date.now(),
-      customer,
-      items: orderItems,
-      total: orderItems.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
-      ),
-      status: "Confirmed",
-      createdAt: new Date().toISOString(),
-    };
+        snapshots.forEach((snapshot, index) => {
+          if (!snapshot.exists()) {
+            throw new Error("A product could not be found.");
+          }
 
-    setData((prev) => ({
-      ...prev,
-      products: updatedProducts,
-      orders: [...prev.orders, order],
-    }));
+          const product = snapshot.data();
+          const quantity = quantities.get(snapshot.id);
 
-    return {
-      success: true,
-      message: "Order placed successfully!",
-      order,
-    };
+          if (Number(product.stock) < quantity) {
+            throw new Error(
+              `Only ${product.stock} units of ${product.name} are available.`
+            );
+          }
+
+          orderItems.push({
+            productId: snapshot.id,
+            name: product.name,
+            image: product.image || "",
+            price: Number(product.price),
+            quantity,
+          });
+
+          transaction.update(productRefs[index], {
+            stock: Number(product.stock) - quantity,
+          });
+        });
+
+        const total = orderItems.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0
+        );
+
+        transaction.set(orderRef, {
+          userId: customer.uid,
+          customerName: customer.name,
+          customerEmail: customer.email,
+          items: orderItems,
+          total,
+          status: "pending",
+          paymentMethod: "Cash on Delivery",
+          shippingAddress: {
+            name: customer.name,
+            phone: customer.mobile,
+            email: customer.email,
+            address: customer.address,
+            pincode: customer.pincode,
+          },
+          createdAt: serverTimestamp(),
+        });
+      });
+
+      return {
+        success: true,
+        message: "Order placed successfully!",
+        orderId: orderRef.id,
+      };
+
+    } catch (error) {
+      console.error("Order placement error:", error);
+
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
   };
 
-  const updateOrderStatus = (orderId, status) => {
-    setData((prev) => ({
-      ...prev,
-      orders: prev.orders.map((order) =>
-        order.id === orderId
-          ? { ...order, status }
-          : order
-      ),
-    }));
+  // UPDATE ORDER STATUS
+  const updateOrderStatus = async (orderId, status) => {
+    return await updateDoc(doc(db, "orders", orderId), {
+      status,
+      updatedAt: serverTimestamp(),
+    });
   };
 
   return (
     <InventoryContext.Provider
       value={{
-        products: data.products,
-        orders: data.orders,
+        products,
+        orders,
+        loading,
+        error,
         addProduct,
         editProduct,
         updateStock,

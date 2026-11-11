@@ -1,6 +1,7 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBEIbVnXX-ggXB539AU_O9xhWDlqapyKlc",
@@ -12,13 +13,14 @@ const firebaseConfig = {
   measurementId: "G-VP7HXX5RYV"
 };
 
-// CUSTOMER APP
+// CUSTOMER Firebase APP
 const app =
   getApps().find((item) => item.name === "[DEFAULT]") ||
   initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 
 // ADMIN APP
 const adminApp =
@@ -27,11 +29,4 @@ const adminApp =
 
 export const adminAuth = getAuth(adminApp);
 export const adminDb = getFirestore(adminApp);
-
-console.log("Customer app:", auth.app.name);
-console.log("Admin app:", adminAuth.app.name);
-
-console.log(
-  "Are authentication instances the same?",
-  auth === adminAuth
-);
+export const adminStorage = getStorage(adminApp);
