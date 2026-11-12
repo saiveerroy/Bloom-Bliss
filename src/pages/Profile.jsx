@@ -7,8 +7,7 @@ import {
   collection,
   query,
   where,
-  getDocs,
-  orderBy,
+  onSnapshot,
   doc,
   updateDoc,
   serverTimestamp,
@@ -28,48 +27,48 @@ export default function Profile() {
 
   // FETCH CUSTOMER ORDERS
   
-useEffect(() => {
-    if (!user) {
+    useEffect(() => {
+      if (!user) {
         setOrders([]);
         setLoadingOrders(false);
         return;
-    }
+      }
 
-  async function fetchOrders() {
-    setLoadingOrders(true);
-    setError("");
+      setLoadingOrders(true);
+      setError("");
 
-    try {
       const ordersQuery = query(
         collection(db, "orders"),
         where("userId", "==", user.uid)
       );
 
-      const snapshot = await getDocs(ordersQuery);
+      const unsubscribe = onSnapshot(
+        ordersQuery,
+        (snapshot) => {
+          const orderList = snapshot.docs.map((orderDoc) => ({
+            id: orderDoc.id,
+            ...orderDoc.data(),
+          }));
 
-      const orderList = snapshot.docs.map((orderDoc) => ({
-        id: orderDoc.id,
-        ...orderDoc.data(),
-      }));
+          orderList.sort((a, b) => {
+            const dateA = a.createdAt?.toDate?.()?.getTime() || 0;
+            const dateB = b.createdAt?.toDate?.()?.getTime() || 0;
 
-      orderList.sort((a, b) => {
-        const dateA = a.createdAt?.toDate?.()?.getTime() || 0;
-        const dateB = b.createdAt?.toDate?.()?.getTime() || 0;
-        return dateB - dateA;
-      });
+            return dateB - dateA;
+          });
 
-      setOrders(orderList);
-    } catch (err) {
-      console.error("Order loading error:", err);
-      setError("Unable to load your orders. Please try again.");
-    } finally {
-      setLoadingOrders(false);
-    }
-  }
+          setOrders(orderList);
+          setLoadingOrders(false);
+        },
+        (err) => {
+          console.error("Order loading error:", err);
+          setError("Unable to load your orders.");
+          setLoadingOrders(false);
+        }
+      );
 
-  fetchOrders();
-}, [user]);
-
+      return () => unsubscribe();
+    }, [user]);
   // FORMAT DATE
   function formatDate(date) {
     if (!date) return "Date unavailable";
