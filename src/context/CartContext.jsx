@@ -33,13 +33,12 @@ export function CartProvider({ children }) {
 
     setCartLoading(true);
 
-    // Guest cart: use localStorage
     if (!user) {
       try {
         const saved = localStorage.getItem(CART_STORAGE_KEY);
         setCart(saved ? JSON.parse(saved) : []);
       } catch (error) {
-        console.error("Cart loading error:", error);
+        console.error("Guest cart loading error:", error);
         setCart([]);
       }
 
@@ -47,7 +46,6 @@ export function CartProvider({ children }) {
       return;
     }
 
-    // Logged-in customer: use Firestore
     const cartRef = collection(
       db,
       "customers",
@@ -67,32 +65,28 @@ export function CartProvider({ children }) {
         setCartLoading(false);
       },
       (error) => {
-        console.error("Firestore cart error:", error);
+        console.error("Firestore cart loading error:", error);
         setCartLoading(false);
       }
     );
 
-    return () => unsubscribe();
+    return unsubscribe;
   }, [user, authLoading]);
 
   // SAVE GUEST CART
   useEffect(() => {
     if (authLoading || user) return;
 
-    try {
-      localStorage.setItem(
-        CART_STORAGE_KEY,
-        JSON.stringify(cart)
-      );
-    } catch (error) {
-      console.error("Cart saving error:", error);
-    }
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify(cart)
+    );
   }, [cart, user, authLoading]);
 
   // ADD TO CART
   async function addToCart(product, products) {
     const currentProduct = products.find(
-      (item) => item.id === product.id
+      (p) => String(p.id) === String(product.id)
     );
 
     if (!currentProduct) {
@@ -101,12 +95,10 @@ export function CartProvider({ children }) {
     }
 
     const existing = cart.find(
-      (item) => item.id === product.id
+      (item) => String(item.id) === String(product.id)
     );
 
-    const quantity = existing
-      ? existing.quantity
-      : 0;
+    const quantity = existing ? Number(existing.quantity) : 0;
 
     if (quantity >= Number(currentProduct.stock)) {
       alert("Sorry, no more stock available.");
@@ -114,7 +106,7 @@ export function CartProvider({ children }) {
     }
 
     const updatedItem = {
-      id: product.id,
+      id: String(product.id),
       name: currentProduct.name,
       image: currentProduct.image || "",
       price: Number(currentProduct.price),
@@ -124,139 +116,134 @@ export function CartProvider({ children }) {
     try {
       if (user) {
         await setDoc(
-          doc(db, "customers", user.uid, "cartItems", product.id),
+          doc(db, "customers", user.uid, "cartItems", String(product.id)),
           updatedItem
         );
       } else {
         setCart((previous) => {
           const found = previous.find(
-            (item) => item.id === product.id
+            (item) => String(item.id) === String(product.id)
           );
 
-          if (found) {
-            return previous.map((item) =>
-              item.id === product.id
-                ? updatedItem
-                : item
-            );
-          }
-
-          return [...previous, updatedItem];
+          return found
+            ? previous.map((item) =>
+                String(item.id) === String(product.id)
+                  ? updatedItem
+                  : item
+              )
+            : [...previous, updatedItem];
         });
       }
     } catch (error) {
-      console.error("Add to cart error:", error);
-      alert("Unable to add product to cart.");
+      console.error("Add cart error:", error);
+      alert("Unable to add product.");
+    }
+  }
+
+  // INCREASE QUANTITY
+  async function increaseQuantity(id, products) {
+    const item = cart.find(
+      (p) => String(p.id) === String(id)
+    );
+
+    if (!item) return;
+
+    const product = products.find(
+      (p) => String(p.id) === String(id)
+    );
+
+    if (!product) {
+      alert("Product not found.");
+      return;
+    }
+
+    if (Number(item.quantity) >= Number(product.stock)) {
+      alert("Sorry, no more stock available.");
+      return;
+    }
+
+    const updatedItem = {
+      ...item,
+      quantity: Number(item.quantity) + 1,
+    };
+
+    try {
+      if (user) {
+        await setDoc(
+          doc(db, "customers", user.uid, "cartItems", String(id)),
+          updatedItem
+        );
+      } else {
+        setCart((previous) =>
+          previous.map((p) =>
+            String(p.id) === String(id) ? updatedItem : p
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Increase quantity error:", error);
+      alert("Unable to increase quantity.");
+    }
+  }
+
+  // DECREASE QUANTITY
+  async function decreaseQuantity(id) {
+    const item = cart.find(
+      (p) => String(p.id) === String(id)
+    );
+
+    if (!item) return;
+
+    if (Number(item.quantity) <= 1) {
+      await removeFromCart(id);
+      return;
+    }
+
+    const updatedItem = {
+      ...item,
+      quantity: Number(item.quantity) - 1,
+    };
+
+    try {
+      if (user) {
+        await setDoc(
+          doc(db, "customers", user.uid, "cartItems", String(id)),
+          updatedItem
+        );
+      } else {
+        setCart((previous) =>
+          previous.map((p) =>
+            String(p.id) === String(id) ? updatedItem : p
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Decrease quantity error:", error);
+      alert("Unable to decrease quantity.");
     }
   }
 
   // REMOVE FROM CART
-    async function removeFromCart(id) {
-        try {
-        if (user) {
-            await deleteDoc(
-            doc(db, "customers", user.uid, "cartItems", id)
-            );
-        } else {
-            setCart((previous) =>
-            previous.filter((item) => item.id !== id)
-            );
-        }
-        } catch (error) {
-        console.error("Remove cart item error:", error);
-        alert("Unable to remove product.");
-        }
-    }
-
-        // INCREASE QUANTITY
-    async function increaseQuantity(id, products) {
-        const item = cart.find(
-        (product) => String(product.id) === String(id)
+  async function removeFromCart(id) {
+    try {
+      if (user) {
+        await deleteDoc(
+          doc(db, "customers", user.uid, "cartItems", String(id))
         );
-
-        if (!item) return;
-
-        const currentProduct = products.find(
-        (product) => String(product.id) === String(id)
+      } else {
+        setCart((previous) =>
+          previous.filter(
+            (item) => String(item.id) !== String(id)
+          )
         );
-
-        if (!currentProduct) {
-        alert("Product not found.");
-        return;
-        }
-
-        if (item.quantity >= Number(currentProduct.stock)) {
-        alert("Sorry, no more stock available.");
-        return;
-        }
-
-        const updatedItem = {
-        ...item,
-        quantity: item.quantity + 1,
-        };
-
-        try {
-        if (user) {
-            await setDoc(
-            doc(db, "customers", user.uid, "cartItems", String(id)),
-            updatedItem
-            );
-        } else {
-            setCart((previous) =>
-            previous.map((product) =>
-                String(product.id) === String(id)
-                ? updatedItem
-                : product
-            )
-            );
-        }
-        } catch (error) {
-        console.error("Increase quantity error:", error);
-        alert("Unable to increase quantity.");
-        }
+      }
+    } catch (error) {
+      console.error("Remove cart error:", error);
+      alert("Unable to remove product.");
     }
+  }
 
-    // DECREASE QUANTITY
-    async function decreaseQuantity(id) {
-        const item = cart.find(
-        (product) => String(product.id) === String(id)
-        );
-
-        if (!item) return;
-
-        // Remove item when quantity reaches zero
-        if (item.quantity <= 1) {
-        await removeFromCart(id);
-        return;
-        }
-
-        const updatedItem = {
-        ...item,
-        quantity: item.quantity - 1,
-        };
-
-        try {
-        if (user) {
-            await setDoc(
-            doc(db, "customers", user.uid, "cartItems", String(id)),
-            updatedItem
-            );
-        } else {
-            setCart((previous) =>
-            previous.map((product) =>
-                String(product.id) === String(id)
-                ? updatedItem
-                : product
-            )
-            );
-        }
-        } catch (error) {
-        console.error("Decrease quantity error:", error);
-        alert("Unable to decrease quantity.");
-        }
-    }
-
-    // CLEAR CART
+  // CLEAR CART
   async function clearCart() {
     try {
       if (user) {
@@ -283,19 +270,17 @@ export function CartProvider({ children }) {
         cart,
         cartLoading,
         addToCart,
-        removeFromCart,
         increaseQuantity,
         decreaseQuantity,
+        removeFromCart,
         clearCart,
       }}
     >
       {children}
     </CartContext.Provider>
   );
+}
 
-} // IMPORTANT: closes CartProvider here
-
-// KEEP useCart OUTSIDE CartProvider
 export function useCart() {
   const context = useContext(CartContext);
 
