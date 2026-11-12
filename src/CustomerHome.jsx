@@ -4,45 +4,30 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { useCart } from "./context/CartContext";
 
-// CATEGORIES
-
-const categories = [
-  {
-    name: "Birthday Flowers",
-    image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=600",
-  },
-  {
-    name: "Love & Romance",
-    image: "https://images.unsplash.com/photo-1520763185298-1b434c919102?w=600",
-  },
-  {
-    name: "Anniversary Gifts",
-    image: "https://images.unsplash.com/photo-1525310072745-f49212b5ac6d?w=600",
-  },
-  {
-    name: "Flower Baskets",
-    image: "https://images.unsplash.com/photo-1494972308805-463bc619d34b?w=600",
-  },
-];
 
 // NAVBAR
 
+
 function Navbar({ cartCount, onCartClick }) {
   const [menuOpen, setMenuOpen] = useState(false);
-
   const [profileOpen, setProfileOpen] = useState(false);
 
-  const { user, customer, logout, loading } = useAuth();
+  const { user, customer, logout } = useAuth();
   const navigate = useNavigate();
- 
-
 
   const links = [
-    ["Home", "#"],
+    ["Home", "/"],
     ["Shop", "/shop"],
     ["Collections", "#categories"],
     ["Our Story", "#about"],
     ["Contact", "#contact"],
+  ];
+
+  const occasionCategories = [
+    "Birthday Flowers",
+    "Love & Romance",
+    "Anniversary Gifts",
+    "Flower Baskets",
   ];
 
   async function handleLogout() {
@@ -56,7 +41,6 @@ function Navbar({ cartCount, onCartClick }) {
     }
   }
 
-
   return (
     <>
       <div className="bg-[#536b50] py-2 text-center text-xs tracking-wider text-white">
@@ -66,16 +50,19 @@ function Navbar({ cartCount, onCartClick }) {
       <header className="sticky top-0 z-50 border-b border-[#eee5df] bg-[#fffaf7]">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
 
-          <a href="#" className="font-serif text-2xl font-bold text-[#536b50]">
+          <a href="/" className="font-serif text-2xl font-bold text-[#536b50]">
             Bloom <span className="text-[#d58c91]">&</span> Bliss
             <span className="block text-center text-[9px] tracking-[4px] text-gray-500">
               FLOWER STUDIO
             </span>
           </a>
 
+          {/* DESKTOP NAVIGATION */}
+
           <nav className="hidden items-center gap-8 text-sm md:flex">
-            <a href="#">Home</a>
-            <a href="#shop">Shop</a>
+            <a href="/">Home</a>
+
+            <a href="/shop">Shop</a>
 
             <div className="group relative">
               <button type="button" className="py-3">
@@ -83,15 +70,22 @@ function Navbar({ cartCount, onCartClick }) {
               </button>
 
               <div className="invisible absolute left-0 top-full z-50 w-64 rounded-xl border bg-white p-3 opacity-0 shadow-xl transition-all group-hover:visible group-hover:opacity-100">
-                {categories.map((category) => (
-                  <a
-                    key={category.name}
-                    href="#shop"
-                    className="block rounded-lg px-4 py-3 text-sm hover:bg-[#fff5f3]"
+
+                {occasionCategories.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() =>
+                      navigate("/shop", {
+                        state: { category },
+                      })
+                    }
+                    className="block w-full rounded-lg px-4 py-3 text-left text-sm hover:bg-[#fff5f3]"
                   >
-                    {category.name}
-                  </a>
+                    {category}
+                  </button>
                 ))}
+
               </div>
             </div>
 
@@ -99,12 +93,13 @@ function Navbar({ cartCount, onCartClick }) {
             <a href="#contact">Contact</a>
           </nav>
 
+          {/* RIGHT SIDE ICONS */}
+
           <div className="flex items-center gap-4">
 
-            {/* PROFILE ICON */}
+            {/* PROFILE */}
 
             <div className="relative">
-
               <button
                 type="button"
                 onClick={() => {
@@ -114,7 +109,7 @@ function Navbar({ cartCount, onCartClick }) {
                     setProfileOpen(!profileOpen);
                   }
                 }}
-                className="flex items-center gap-2 text-xl text-[#536b50]"
+                className="text-xl text-[#536b50]"
                 aria-label="Customer profile"
               >
                 👤
@@ -147,23 +142,21 @@ function Navbar({ cartCount, onCartClick }) {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="mt-2 w-full rounded-lg bg-[#536b50] px-3 py-2 text-sm text-white hover:bg-[#3e543b]"
+                    className="mt-2 w-full rounded-lg bg-[#536b50] px-3 py-2 text-sm text-white"
                   >
                     Logout
                   </button>
 
                 </div>
               )}
-
             </div>
 
-            {/* CART ICON */}
-
+            {/* CART */}
 
             <button
               type="button"
               onClick={onCartClick}
-              className="relative cursor-pointer text-2xl"
+              className="relative text-2xl"
               aria-label="Open shopping cart"
             >
               🛒
@@ -175,6 +168,8 @@ function Navbar({ cartCount, onCartClick }) {
               )}
             </button>
 
+            {/* MOBILE MENU */}
+
             <button
               type="button"
               onClick={() => setMenuOpen(!menuOpen)}
@@ -183,11 +178,15 @@ function Navbar({ cartCount, onCartClick }) {
             >
               {menuOpen ? "✕" : "☰"}
             </button>
+
           </div>
         </div>
 
+        {/* MOBILE NAVIGATION */}
+
         {menuOpen && (
           <nav className="flex flex-col border-t bg-[#fffaf7] px-6 py-4 md:hidden">
+
             {links.map(([name, href]) => (
               <a
                 key={name}
@@ -198,12 +197,15 @@ function Navbar({ cartCount, onCartClick }) {
                 {name}
               </a>
             ))}
+
           </nav>
         )}
+
       </header>
     </>
   );
 }
+
 
 // HERO SECTION
 
@@ -232,7 +234,7 @@ function Hero() {
         </p>
 
         <a
-          href="#shop"
+          href="/shop"
           className="mt-8 w-fit bg-[#536b50] px-8 py-4 text-xs uppercase tracking-[2px] text-white hover:bg-[#3e543b]"
         >
           Shop Flowers →
@@ -275,49 +277,95 @@ function Benefits() {
 
 // CATEGORIES
 
+const categories = [
+  { name: "Birthday Flowers", category: "Birthday Flowers" },
+  { name: "Love & Romance", category: "Love & Romance" },
+  { name: "Anniversary Gifts", category: "Anniversary Gifts" },
+  { name: "Flower Baskets", category: "Flower Baskets" },
+];
+
 function Categories() {
-  return (
-    <section id="categories" className="mx-auto max-w-7xl px-5 py-20">
 
-      <div className="mb-10 text-center">
-        <p className="text-xs uppercase tracking-[4px] text-[#b47b75]">
-          Find something beautiful
-        </p>
+   const navigate = useNavigate();
 
-        <h2 className="mt-3 font-serif text-4xl sm:text-5xl">
-          Shop By Occasion
-        </h2>
+   const occasions = [
+      {
+        name: "Birthday Flowers",
+        category: "Birthday Flowers",
+        image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=600",
+      },
+      {
+        name: "Love & Romance",
+        category: "Love & Romance",
+        image: "https://images.unsplash.com/photo-1520763185298-1b434c919102?w=600",
+      },
+      {
+        name: "Anniversary Gifts",
+        category: "Anniversary Gifts",
+        image: "https://images.unsplash.com/photo-1525310072745-f49212b5ac6d?w=600",
+      },
+      {
+        name: "Flower Baskets",
+        category: "Flower Baskets",
+        image: "https://images.unsplash.com/photo-1494972308805-463bc619d34b?w=600",
+      },
+    ];
 
-        <p className="mt-3 text-sm text-gray-500">
-          The perfect flowers for every special moment.
-        </p>
-      </div>
+    return (
+      <section id="categories" className="mx-auto max-w-7xl px-5 py-20">
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {categories.map((category) => (
-          <a
-            href="#shop"
-            key={category.name}
-            className="group relative overflow-hidden"
-          >
-            <div className="aspect-[4/5] overflow-hidden">
-              <img
-                src={category.image}
-                alt={category.name}
-                className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
-              />
-            </div>
+        <div className="mb-10 text-center">
+          <p className="text-xs uppercase tracking-[4px] text-[#b47b75]">
+            Find something beautiful
+          </p>
 
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-5 pt-16 text-center text-white">
-              <h3 className="font-serif text-lg">{category.name}</h3>
-              <p className="mt-1 text-xs">Explore collection →</p>
-            </div>
-          </a>
-        ))}
-      </div>
-    </section>
-  );
-}
+          <h2 className="mt-3 font-serif text-4xl sm:text-5xl">
+            Shop By Occasion
+          </h2>
+
+          <p className="mt-3 text-sm text-gray-500">
+            The perfect flowers for every special moment.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+
+          {occasions.map((occasion) => (
+            <button
+              type="button"
+              key={occasion.name}
+              onClick={() =>
+                navigate("/shop", {
+                  state: { category: occasion.category },
+                })
+              }
+              className="group relative overflow-hidden text-left"
+            >
+              <div className="aspect-[4/5] overflow-hidden">
+                <img
+                  src={occasion.image}
+                  alt={occasion.name}
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
+                />
+              </div>
+
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-5 pt-16 text-center text-white">
+                <h3 className="font-serif text-lg">
+                  {occasion.name}
+                </h3>
+
+                <p className="mt-1 text-xs">
+                  Explore collection →
+                </p>
+              </div>
+            </button>
+          ))}
+
+        </div>
+      </section>
+    );
+  }
+
 
 // PRODUCTS
 
@@ -712,7 +760,7 @@ export default function CustomerHome() {
       cartLoading,
     } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  
 
   const [orderSuccess, setOrderSuccess] = useState(
     location.state?.orderSuccess || null
@@ -770,12 +818,6 @@ export default function CustomerHome() {
       <Benefits />
 
       <Categories />
-
-      <Products
-        onAddToCart={(product) => addToCart(product, products)}
-        selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
-      />
 
       <About />
 

@@ -3,6 +3,12 @@ import React, { useState } from "react";
 import { useInventory } from "../context/InventoryContext";
 
 export default function ManageProducts() {
+  const categories = [
+  "Birthday Flowers",
+  "Love & Romance",
+  "Anniversary Gifts",
+  "Flower Baskets",
+];
   const {
     products,
     addProduct,
@@ -226,14 +232,21 @@ export default function ManageProducts() {
             required
           />
 
-          <input
-            name="category"
-            value={form.category}
-            onChange={handleChange}
-            placeholder="Category"
-            className="rounded-lg border p-3"
-            required
-          />
+         <select
+          name="category"
+          value={form.category}
+          onChange={handleChange}
+          className="rounded-lg border bg-white p-3"
+          required
+        >
+          <option value="">Select Product Category</option>
+
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
 
           <input
             name="price"

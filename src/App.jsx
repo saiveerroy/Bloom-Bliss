@@ -14,6 +14,7 @@ import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AdminProfile from "./admin/AdminProfile";
 import AdminLogin from "./admin/AdminLogin";
 import ProductDetails from "./pages/ProductDetails";
+import Shop from "./pages/Shop";
 
 
 function App() {
@@ -42,6 +43,10 @@ function App() {
       <Route
         path="/product/:id"
         element={<ProductDetails />}
+      />
+      <Route
+        path="/shop"
+        element={<Shop />}
       />
 
       <Route
