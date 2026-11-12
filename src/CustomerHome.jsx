@@ -322,7 +322,7 @@ function Categories() {
 // PRODUCTS
 
 function Products({
-  onAddToCart,
+  onAddToCart={addToCart},
   selectedCategory,
   setSelectedCategory,
 }) {
@@ -552,7 +552,9 @@ function Footer() {
 function ShoppingCart({
   cart,
   onClose,
-  onRemove,
+  onRemove={removeFromCart},
+  onIncrease,
+  onDecrease,
   onCheckout,
 }) {
   const total = cart.reduce(
@@ -627,9 +629,29 @@ function ShoppingCart({
                       ₹{item.price.toLocaleString("en-IN")}
                     </p>
 
-                    <p className="mt-2 text-sm">
-                      Quantity: {item.quantity}
-                    </p>
+                    <div className="mt-3 flex items-center gap-3">
+
+                      <button
+                        type="button"
+                        onClick={() => onDecrease(item.id)}
+                        className="h-8 w-8 rounded border border-[#536b50] text-lg"
+                      >
+                        −
+                      </button>
+
+                      <span className="text-sm font-semibold">
+                        {item.quantity}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => onIncrease(item.id)}
+                        className="h-8 w-8 rounded border border-[#536b50] text-lg"
+                      >
+                        +
+                      </button>
+
+                    </div>
 
                     <button
                       type="button"
@@ -681,7 +703,14 @@ export default function CustomerHome() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const { cart, addToCart, removeFromCart } = useCart();
+  const {
+      cart,
+      addToCart,
+      removeFromCart,
+      increaseQuantity,
+      decreaseQuantity,
+      cartLoading,
+    } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
 
@@ -759,6 +788,8 @@ export default function CustomerHome() {
           cart={cart}
           onClose={() => setCartOpen(false)}
           onRemove={removeFromCart}
+          onIncrease={(id) => increaseQuantity(id, products)}
+          onDecrease={decreaseQuantity}
           onCheckout={openCheckout}
         />
       )}

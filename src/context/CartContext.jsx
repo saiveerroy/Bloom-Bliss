@@ -6,39 +6,93 @@ import React, {
   useState,
 } from "react";
 
+import {
+  collection,
+  doc,
+  onSnapshot,
+  setDoc,
+  deleteDoc,
+} from "firebase/firestore";
+
+import { db } from "../firebase";
+import { useAuth } from "./AuthContext";
+
 const CartContext = createContext(null);
 
 const CART_STORAGE_KEY = "bloom_bliss_cart";
 
 export function CartProvider({ children }) {
-  // Load previously saved cart
-  const [cart, setCart] = useState(() => {
-    try {
-      const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+  const { user, loading: authLoading } = useAuth();
 
-      return savedCart ? JSON.parse(savedCart) : [];
-    } catch (error) {
-      console.error("Unable to load cart:", error);
-      return [];
-    }
-  });
+  const [cart, setCart] = useState([]);
+  const [cartLoading, setCartLoading] = useState(true);
 
-  // Save cart whenever it changes
+  // LOAD CART
   useEffect(() => {
+    if (authLoading) return;
+
+    setCartLoading(true);
+
+    // Guest cart: use localStorage
+    if (!user) {
+      try {
+        const saved = localStorage.getItem(CART_STORAGE_KEY);
+        setCart(saved ? JSON.parse(saved) : []);
+      } catch (error) {
+        console.error("Cart loading error:", error);
+        setCart([]);
+      }
+
+      setCartLoading(false);
+      return;
+    }
+
+    // Logged-in customer: use Firestore
+    const cartRef = collection(
+      db,
+      "customers",
+      user.uid,
+      "cartItems"
+    );
+
+    const unsubscribe = onSnapshot(
+      cartRef,
+      (snapshot) => {
+        const items = snapshot.docs.map((item) => ({
+          ...item.data(),
+          id: item.id,
+        }));
+
+        setCart(items);
+        setCartLoading(false);
+      },
+      (error) => {
+        console.error("Firestore cart error:", error);
+        setCartLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user, authLoading]);
+
+  // SAVE GUEST CART
+  useEffect(() => {
+    if (authLoading || user) return;
+
     try {
       localStorage.setItem(
         CART_STORAGE_KEY,
         JSON.stringify(cart)
       );
     } catch (error) {
-      console.error("Unable to save cart:", error);
+      console.error("Cart saving error:", error);
     }
-  }, [cart]);
+  }, [cart, user, authLoading]);
 
   // ADD TO CART
-  function addToCart(product, products) {
+  async function addToCart(product, products) {
     const currentProduct = products.find(
-      (p) => p.id === product.id
+      (item) => item.id === product.id
     );
 
     if (!currentProduct) {
@@ -50,57 +104,96 @@ export function CartProvider({ children }) {
       (item) => item.id === product.id
     );
 
-    const currentQuantity = existing
+    const quantity = existing
       ? existing.quantity
       : 0;
 
-    if (currentQuantity >= Number(currentProduct.stock)) {
+    if (quantity >= Number(currentProduct.stock)) {
       alert("Sorry, no more stock available.");
       return;
     }
 
-    setCart((previous) => {
-      const found = previous.find(
-        (item) => item.id === product.id
-      );
+    const updatedItem = {
+      id: product.id,
+      name: currentProduct.name,
+      image: currentProduct.image || "",
+      price: Number(currentProduct.price),
+      quantity: quantity + 1,
+    };
 
-      if (found) {
-        return previous.map((item) =>
-          item.id === product.id
-            ? {
-                ...item,
-                quantity: item.quantity + 1,
-              }
-            : item
+    try {
+      if (user) {
+        await setDoc(
+          doc(db, "customers", user.uid, "cartItems", product.id),
+          updatedItem
         );
-      }
+      } else {
+        setCart((previous) => {
+          const found = previous.find(
+            (item) => item.id === product.id
+          );
 
-      return [
-        ...previous,
-        {
-          ...product,
-          quantity: 1,
-        },
-      ];
-    });
+          if (found) {
+            return previous.map((item) =>
+              item.id === product.id
+                ? updatedItem
+                : item
+            );
+          }
+
+          return [...previous, updatedItem];
+        });
+      }
+    } catch (error) {
+      console.error("Add to cart error:", error);
+      alert("Unable to add product to cart.");
+    }
   }
 
   // REMOVE FROM CART
-  function removeFromCart(id) {
-    setCart((previous) =>
-      previous.filter((item) => item.id !== id)
-    );
+  async function removeFromCart(id) {
+    try {
+      if (user) {
+        await deleteDoc(
+          doc(db, "customers", user.uid, "cartItems", id)
+        );
+      } else {
+        setCart((previous) =>
+          previous.filter((item) => item.id !== id)
+        );
+      }
+    } catch (error) {
+      console.error("Remove cart item error:", error);
+      alert("Unable to remove product.");
+    }
   }
 
   // CLEAR CART
-  function clearCart() {
-    setCart([]);
+  async function clearCart() {
+    try {
+      if (user) {
+        await Promise.all(
+          cart.map((item) =>
+            deleteDoc(
+              doc(db, "customers", user.uid, "cartItems", item.id)
+            )
+          )
+        );
+      } else {
+        setCart([]);
+        localStorage.removeItem(CART_STORAGE_KEY);
+      }
+    } catch (error) {
+      console.error("Clear cart error:", error);
+      alert("Unable to clear cart.");
+    }
   }
 
   return (
     <CartContext.Provider
       value={{
         cart,
+        cartLoading,
         addToCart,
         removeFromCart,
         clearCart,

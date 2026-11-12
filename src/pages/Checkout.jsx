@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useInventory } from "../context/InventoryContext";
 import { useAuth } from "../context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
-
+import { useCart } from "../context/CartContext";
 
 
 export default function Checkout() {
@@ -13,7 +13,7 @@ export default function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const cart = location.state?.cart || [];
+  const {cart, clearCart, cartLoading,} = useCart();
 
   const [customer, setCustomer] = useState({
     name: authCustomer?.name || user?.displayName || "",
@@ -54,6 +54,10 @@ export default function Checkout() {
     }
 
     if (loading) return;
+
+    if (cartLoading) {
+      return <div className="p-10 text-center">Loading your cart...</div>;
+    }
 
     if (cart.length === 0) {
       setError("Your shopping cart is empty.");
@@ -97,6 +101,7 @@ export default function Checkout() {
       if (!result.success) {
         throw new Error(result.message);
       }
+      await clearCart();
 
       // Redirect after successful order placement
       navigate("/", {
