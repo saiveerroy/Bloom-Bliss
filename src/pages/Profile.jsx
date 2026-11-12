@@ -28,48 +28,48 @@ export default function Profile() {
 
   // FETCH CUSTOMER ORDERS
   
-    useEffect(() => {
-      if (!user) {
+useEffect(() => {
+    if (!user) {
         setOrders([]);
         setLoadingOrders(false);
         return;
-      }
+    }
 
-      setLoadingOrders(true);
-      setError("");
+  async function fetchOrders() {
+    setLoadingOrders(true);
+    setError("");
 
+    try {
       const ordersQuery = query(
         collection(db, "orders"),
         where("userId", "==", user.uid)
       );
 
-      const unsubscribe = onSnapshot(
-        ordersQuery,
-        (snapshot) => {
-          const orderList = snapshot.docs.map((orderDoc) => ({
-            id: orderDoc.id,
-            ...orderDoc.data(),
-          }));
+      const snapshot = await getDocs(ordersQuery);
 
-          orderList.sort((a, b) => {
-            const dateA = a.createdAt?.toDate?.()?.getTime() || 0;
-            const dateB = b.createdAt?.toDate?.()?.getTime() || 0;
+      const orderList = snapshot.docs.map((orderDoc) => ({
+        id: orderDoc.id,
+        ...orderDoc.data(),
+      }));
 
-            return dateB - dateA;
-          });
+      orderList.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.()?.getTime() || 0;
+        const dateB = b.createdAt?.toDate?.()?.getTime() || 0;
+        return dateB - dateA;
+      });
 
-          setOrders(orderList);
-          setLoadingOrders(false);
-        },
-        (err) => {
-          console.error("Order loading error:", err);
-          setError("Unable to load your orders.");
-          setLoadingOrders(false);
-        }
-      );
+      setOrders(orderList);
+    } catch (err) {
+      console.error("Order loading error:", err);
+      setError("Unable to load your orders. Please try again.");
+    } finally {
+      setLoadingOrders(false);
+    }
+  }
 
-      return () => unsubscribe();
-    }, [user]);
+  fetchOrders();
+}, [user]);
+
   // FORMAT DATE
   function formatDate(date) {
     if (!date) return "Date unavailable";
