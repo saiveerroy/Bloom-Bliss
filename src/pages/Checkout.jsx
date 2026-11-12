@@ -56,7 +56,11 @@ export default function Checkout() {
     if (loading) return;
 
     if (cartLoading) {
-      return <div className="p-10 text-center">Loading your cart...</div>;
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          Loading your cart...
+        </div>
+      );
     }
 
     if (cart.length === 0) {
