@@ -322,7 +322,7 @@ function Categories() {
 // PRODUCTS
 
 function Products({
-  onAddToCart={addToCart},
+  onAddToCart,
   selectedCategory,
   setSelectedCategory,
 }) {
@@ -552,7 +552,7 @@ function Footer() {
 function ShoppingCart({
   cart,
   onClose,
-  onRemove={removeFromCart},
+  onRemove,
   onIncrease,
   onDecrease,
   onCheckout,
