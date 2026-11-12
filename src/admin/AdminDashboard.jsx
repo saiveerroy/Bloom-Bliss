@@ -2,34 +2,74 @@
 import { useState } from "react";
 import ManageProducts from "./ManageProducts";
 import ManageOrders from "./ManageOrders";
+import ManageCustomers from "./ManageCustomers";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useInventory } from "../context/InventoryContext";
 
 
-const menuItems = [
-  { name: "Overview", icon: "📊" },
-  { name: "Products", icon: "🌷" },
-  { name: "Orders", icon: "📦" },
-  { name: "Customers", icon: "👥" },
-  { name: "Settings", icon: "⚙️" },
-];
 
-const recentOrders = [
-];
+  const menuItems = [
+    { name: "Overview", icon: "📊" },
+    { name: "Products", icon: "🌷" },
+    { name: "Orders", icon: "📦" },
+    { name: "Customers", icon: "👥" },
+    { name: "Settings", icon: "⚙️" },
+  ];
 
-function AdminDashboard() {
-  const navigate = useNavigate();
+
+  function AdminDashboard() {
+    const navigate = useNavigate();
+
+    const { products, orders, loading } = useInventory();
   
 
-  const [activePage, setActivePage] = useState("Overview");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [activePage, setActivePage] = useState("Overview");
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const stats = [
-    { title: "Total Sales", icon: "💰", change: "+12%" },
-    { title: "Total Orders", icon: "📦", change: "+8%" },
-    { title: "Total Products", icon: "🌸", change: "+4%" },
-    { title: "Pending Orders", icon: "⏳", change: "Needs attention" },
-  ];
+    const totalSales = orders
+        .filter((order) => order.status?.toLowerCase() !== "cancelled")
+        .reduce((sum, order) => sum + Number(order.total || 0), 0);
+
+    const pendingOrders = orders.filter(
+      (order) => order.status?.toLowerCase() === "pending"
+    ).length;
+
+    const stats = [
+      {
+        title: "Total Sales",
+        value: `₹${totalSales.toLocaleString("en-IN")}`,
+        icon: "💰",
+        change: "All-time sales",
+      },
+      {
+        title: "Total Orders",
+        value: orders.length,
+        icon: "📦",
+        change: "All orders",
+      },
+      {
+        title: "Total Products",
+        value: products.length,
+        icon: "🌸",
+        change: "Available products",
+      },
+      {
+        title: "Pending Orders",
+        value: pendingOrders,
+        icon: "⏳",
+        change: "Needs attention",
+      },
+    ];
+
+    const recentOrders = [...orders]
+      .sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.()?.getTime() || 0;
+        const dateB = b.createdAt?.toDate?.()?.getTime() || 0;
+
+        return dateB - dateA;
+      })
+      .slice(0, 5);
 
   return (
     <div className="min-h-screen bg-[#fffaf7] text-[#3d332f]">
@@ -148,6 +188,7 @@ function AdminDashboard() {
         </header>
 
         {/* Dashboard body */}
+        
         <div className="p-5 sm:p-8">
 
           {activePage === "Overview" && (
@@ -158,23 +199,35 @@ function AdminDashboard() {
                   Here's what's happening with your flower shop.
                 </p>
               </div>
+              {loading ? (
+                <div className="rounded-xl bg-white p-8 text-center">
+                  Loading dashboard data...
+                </div>
+              ) : (
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                  {stats.map((stat) => (
+                    <div
+                      key={stat.title}
+                      className="rounded-2xl border border-[#f0e5df] bg-white p-5 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-500">{stat.title}</p>
+                        <span className="text-2xl">{stat.icon}</span>
+                      </div>
 
-              {/* Statistics */}
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                {stats.map((stat) => (
-                  <div
-                    key={stat.title}
-                    className="rounded-2xl border border-[#f0e5df] bg-white p-5 shadow-sm"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-500">{stat.title}</p>
-                      <span className="text-2xl">{stat.icon}</span>
+                      <h3 className="mt-4 text-2xl font-bold">
+                        {stat.value}
+                      </h3>
+
+                      <p className="mt-2 text-xs text-green-600">
+                        {stat.change}
+                      </p>
                     </div>
-                    <h3 className="mt-4 text-2xl font-bold">{stat.value}</h3>
-                    <p className="mt-2 text-xs text-green-600">{stat.change}</p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
+
+            
 
               {/* Recent orders */}
               <section className="mt-8 overflow-hidden rounded-2xl border
@@ -210,13 +263,26 @@ function AdminDashboard() {
                     <tbody>
                       {recentOrders.map((order) => (
                         <tr key={order.id} className="border-t border-[#f3ece7]">
-                          <td className="px-5 py-4 font-semibold">{order.id}</td>
-                          <td className="px-5 py-4">{order.customer}</td>
-                          <td className="px-5 py-4">{order.product}</td>
-                          <td className="px-5 py-4">₹{order.amount}</td>
+                          <td className="px-5 py-4 font-semibold">
+                            #{order.id}
+                          </td>
+
                           <td className="px-5 py-4">
+                            {order.customerName || "Customer"}
+                          </td>
+
+                          <td className="px-5 py-4">
+                            {order.items?.map((item) => item.name).join(", ") || "N/A"}
+                          </td>
+
+                          <td className="px-5 py-4">
+                            ₹{Number(order.total || 0).toLocaleString("en-IN")}
+                          </td>
+
+                          <td className="px-5 py-4">
+
                             <span className="rounded-full bg-pink-50 px-3 py-1 text-xs font-medium text-pink-700">
-                              {order.status}
+                              {order.status || "Pending"}
                             </span>
                           </td>
                         </tr>
@@ -231,10 +297,12 @@ function AdminDashboard() {
           {activePage === "Products" && <ManageProducts />}
 
           {activePage === "Orders" && <ManageOrders />}
+          {activePage === "Customers" && <ManageCustomers />}
 
           {activePage !== "Overview" &&
-          activePage !== "Products" &&
-          activePage !== "Orders" && (
+            activePage !== "Products" &&
+            activePage !== "Orders" &&
+            activePage !== "Customers" && (
             <div className="rounded-2xl border bg-white p-8">
               <h3 className="text-xl font-bold">{activePage}</h3>
               <p className="mt-2 text-sm text-gray-500">
