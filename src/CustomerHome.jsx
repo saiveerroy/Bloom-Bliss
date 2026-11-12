@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useInventory } from "./context/InventoryContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+import { useCart } from "./context/CartContext";
+
 // CATEGORIES
 
 const categories = [
@@ -324,6 +326,8 @@ function Products({
   selectedCategory,
   setSelectedCategory,
 }) {
+
+  const navigate = useNavigate();
   const { products } = useInventory();
 
   const productCategories = [
@@ -417,8 +421,10 @@ function Products({
 
                   <button
                     type="button"
-                    onClick={() => navigate(`/product/${product.id}`)}
-                    className="mt-2 text-left font-serif text-lg hover:text-[#c77f82]"
+                    onClick={() => {
+                      window.location.href = `/product/${product.id}`;
+                    }}
+                    className="mt-2 cursor-pointer text-left font-serif text-lg hover:text-[#c77f82]"
                   >
                     {product.name}
                   </button>
@@ -675,7 +681,7 @@ export default function CustomerHome() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const [cart, setCart] = useState([]);
+  const { cart, addToCart, removeFromCart } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
 
@@ -683,64 +689,9 @@ export default function CustomerHome() {
     location.state?.orderSuccess || null
   );
 
-  // ADD TO CART
+ 
 
-  function addToCart(product) {
-    const currentProduct = products.find(
-      (p) => p.id === product.id
-    );
-
-    const existing = cart.find(
-      (item) => item.id === product.id
-    );
-
-    const currentQuantity = existing
-      ? existing.quantity
-      : 0;
-
-    if (!currentProduct) {
-      alert("Product not found.");
-      return;
-    }
-
-    if (currentQuantity >= currentProduct.stock) {
-      alert("Sorry, no more stock available.");
-      return;
-    }
-
-    setCart((previous) => {
-      const found = previous.find(
-        (item) => item.id === product.id
-      );
-
-      if (found) {
-        return previous.map((item) =>
-          item.id === product.id
-            ? {
-                ...item,
-                quantity: item.quantity + 1,
-              }
-            : item
-        );
-      }
-
-      return [
-        ...previous,
-        {
-          ...product,
-          quantity: 1,
-        },
-      ];
-    });
-  }
-
-  // REMOVE FROM CART
-
-  function removeFromCart(id) {
-    setCart((previous) =>
-      previous.filter((item) => item.id !== id)
-    );
-  }
+  
 
   // CART COUNT
 
@@ -748,7 +699,6 @@ export default function CustomerHome() {
     (total, item) => total + item.quantity,
     0
   );
-
   // OPEN CHECKOUT
 
   function openCheckout() {
@@ -793,7 +743,7 @@ export default function CustomerHome() {
       <Categories />
 
       <Products
-        onAddToCart={addToCart}
+        onAddToCart={(product) => addToCart(product, products)}
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
       />
