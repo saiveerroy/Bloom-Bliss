@@ -302,12 +302,12 @@ function Categories() {
       {
         name: "Anniversary Gifts",
         category: "Anniversary Gifts",
-        image: "https://images.unsplash.com/photo-1525310072745-f49212b5ac6d?w=600",
+        image: "/images/aniver.jpg",
       },
       {
         name: "Flower Baskets",
         category: "Flower Baskets",
-        image: "https://images.unsplash.com/photo-1494972308805-463bc619d34b?w=600",
+        image: "/images/flower-baskets.jpg",
       },
     ];
 
