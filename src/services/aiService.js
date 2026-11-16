@@ -1,20 +1,22 @@
 
 const API_URL = import.meta.env.DEV
   ? "http://localhost:5000"
-  : import.meta.env.VITE_API_URL;
+  : import.meta.env.API_URL;
 
 export async function sendMessageToBloomAI(
   message,
   history = [],
   preferences = {}
 ) {
+  if (!API_URL) {
+    throw new Error("Backend API_URL is not configured.");
+  }
+
   const response = await fetch(`${API_URL}/api/ai/chat`, {
     method: "POST",
-
     headers: {
       "Content-Type": "application/json",
     },
-
     body: JSON.stringify({
       message,
       history,

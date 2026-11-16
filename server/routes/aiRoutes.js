@@ -117,21 +117,19 @@ function detectBudget(message) {
 }
 
 
-function detectMinPrice(message) {
-  const text = message.toLowerCase();
 
+function detectMinPrice(message) {
   const patterns = [
-    /(?:above|over|more than|greater than|at least|minimum|min)\s*(?:rs\.?|inr|₹)?\s*(\d+(?:,\d{3})*(?:\.\d+)?)/i,
-    /(?:₹|rs\.?|inr)\s*(\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:and above|onwards)/i,
+    /(?:above|over|more than|greater than|minimum|min|at least)\s*(?:₹|rs\.?|inr)?\s*(\d+(?:,\d{3})*)/i,
+    /(?:₹|rs\.?|inr)\s*(\d+(?:,\d{3})*)\s*(?:and above|or more)/i,
   ];
 
   for (const pattern of patterns) {
-    const match = text.match(pattern);
+    const match = message.match(pattern);
 
     if (match) {
       const amount = Number(match[1].replace(/,/g, ""));
-
-      if (Number.isFinite(amount) && amount >= 0) {
+      if (Number.isFinite(amount) && amount > 0) {
         return amount;
       }
     }
