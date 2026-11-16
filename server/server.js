@@ -11,23 +11,28 @@ import { db } from "./config/firebaseAdmin.js";
 
 const app = express();
 
+
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
+  "https://bloombliss-eta.vercel.app",
   "http://localhost:5173",
+  process.env.FRONTEND_URL?.trim().replace(/\/+$/, ""),
 ].filter(Boolean);
 
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow server-to-server requests and configured frontend origins.
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin.replace(/\/+$/, ""))) {
         return callback(null, true);
       }
 
+      console.error("CORS blocked origin:", origin);
       return callback(new Error("Origin not allowed by CORS"));
     },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 
 app.use(express.json({ limit: "20kb" }));
 
