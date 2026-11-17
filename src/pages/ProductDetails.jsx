@@ -1,19 +1,73 @@
 
-import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useInventory } from "../context/InventoryContext";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
+import ShoppingCart from "./ShoppingCart";
 
 export default function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { products, loading, error } = useInventory();
-  const { addToCart } = useCart();
+
+  const {
+    cart,
+    addToCart,
+    removeFromCart,
+    increaseQuantity,
+    decreaseQuantity,
+    cartLoading,
+  } = useCart();
+
+  const { user, loading: authLoading } = useAuth();
+
+  const [cartOpen, setCartOpen] = useState(false);
+
+  // GO BACK TO PREVIOUS PAGE
+  function goBack() {
+      if (location.state?.from === "/shop") {
+        navigate("/shop", {
+          state: {
+            shopFilters: location.state.shopFilters,
+          },
+        });
+      } else {
+        navigate(-1);
+      }
+    }
+
+  // CART COUNT
+  const cartCount = cart.reduce(
+    (total, item) => total + Number(item.quantity),
+    0
+  );
+
+  // CHECKOUT
+  function handleCheckout() {
+    if (cart.length === 0 || cartLoading || authLoading) return;
+
+    setCartOpen(false);
+
+    if (user) {
+      navigate("/checkout", {
+        state: { cart },
+      });
+    } else {
+      navigate("/login", {
+        state: {
+          from: "/checkout",
+          cart,
+        },
+      });
+    }
+  }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fffaf7]">
+      <div className="flex min-h-screen items-center justify-center bg-[#fffaf7]">
         <p className="text-lg text-[#536b50]">
           Loading beautiful flowers... 🌸
         </p>
@@ -23,7 +77,7 @@ export default function ProductDetails() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <p>Unable to load products: {error}</p>
       </div>
     );
@@ -35,16 +89,16 @@ export default function ProductDetails() {
 
   if (!product) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
+      <div className="flex min-h-screen flex-col items-center justify-center">
         <h2 className="text-2xl font-bold">
           Product not found
         </h2>
 
         <button
-          onClick={() => navigate("/")}
+          onClick={goBack}
           className="mt-5 rounded-lg bg-[#536b50] px-6 py-3 text-white"
         >
-          Back to Home
+          Back to Shopping
         </button>
       </div>
     );
@@ -53,14 +107,46 @@ export default function ProductDetails() {
   return (
     <div className="min-h-screen bg-[#fffaf7] p-5 sm:p-10">
 
-      <button
-        onClick={() => navigate("/")}
-        className="mb-8 text-sm text-[#536b50] underline"
-      >
-        ← Back to Shopping
-      </button>
+      {/* TOP NAVIGATION */}
+
+      <div className="mb-8 flex items-center justify-between">
+
+        <button
+          type="button"
+          onClick={goBack}
+          className="text-sm text-[#536b50] underline"
+        >
+          ← Back to Shopping
+        </button>
+
+        {/* CART ICON */}
+
+        <button
+          type="button"
+          onClick={() => setCartOpen(true)}
+          className="relative flex items-center gap-2 rounded-full bg-[#536b50] px-4 py-3 text-white transition hover:bg-[#3e543b]"
+          aria-label="Open shopping cart"
+        >
+          <span className="text-xl">🛒</span>
+
+          <span className="hidden text-sm sm:block">
+            Cart
+          </span>
+
+          {cartCount > 0 && (
+            <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#c77f82] text-xs text-white">
+              {cartCount}
+            </span>
+          )}
+        </button>
+
+      </div>
+
+      {/* PRODUCT DETAILS */}
 
       <div className="mx-auto grid max-w-5xl gap-10 rounded-2xl bg-white p-5 shadow-sm md:grid-cols-2 md:p-10">
+
+        {/* PRODUCT IMAGE */}
 
         <div>
           <img
@@ -69,6 +155,8 @@ export default function ProductDetails() {
             className="h-[450px] w-full rounded-xl object-cover"
           />
         </div>
+
+        {/* PRODUCT INFORMATION */}
 
         <div className="flex flex-col justify-center">
 
@@ -96,8 +184,11 @@ export default function ProductDetails() {
               : "Currently out of stock"}
           </p>
 
+          {/* ADD TO CART */}
+
           <button
-            disabled={Number(product.stock) <= 0}
+            type="button"
+            disabled={Number(product.stock) <= 0 || cartLoading}
             onClick={() => addToCart(product, products)}
             className="mt-8 rounded-lg bg-[#536b50] px-8 py-4 text-white hover:bg-[#3e543b] disabled:bg-gray-400"
           >
@@ -106,8 +197,11 @@ export default function ProductDetails() {
               : "Out of Stock"}
           </button>
 
+          {/* CONTINUE SHOPPING */}
+
           <button
-            onClick={() => navigate("/")}
+            type="button"
+            onClick={goBack}
             className="mt-4 rounded-lg border border-[#536b50] px-8 py-4 text-[#536b50]"
           >
             Continue Shopping
@@ -115,6 +209,21 @@ export default function ProductDetails() {
 
         </div>
       </div>
+
+      {/* SHARED SHOPPING CART */}
+
+      {cartOpen && (
+        <ShoppingCart
+          cart={cart}
+          onClose={() => setCartOpen(false)}
+          onRemove={removeFromCart}
+          onIncrease={(id) => increaseQuantity(id, products)}
+          onDecrease={decreaseQuantity}
+          onCheckout={handleCheckout}
+          cartLoading={cartLoading || authLoading}
+        />
+      )}
+
     </div>
   );
 }

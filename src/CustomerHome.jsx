@@ -63,7 +63,12 @@ function Navbar({ cartCount, onCartClick }) {
           <nav className="hidden items-center gap-8 text-sm md:flex">
             <a href="/">Home</a>
 
-            <a href="/shop">Shop</a>
+            <button
+                type="button"
+                onClick={() => navigate("/shop")}
+              >
+                Shop
+              </button>
 
             <div className="group relative">
               <button type="button" className="py-3">
@@ -211,6 +216,7 @@ function Navbar({ cartCount, onCartClick }) {
 // HERO SECTION
 
 function Hero() {
+  const navigate = useNavigate();
   return (
     <section className="grid md:grid-cols-2">
       <div className="flex flex-col justify-center bg-[#f8eae5] px-8 py-20 md:px-16">
@@ -234,12 +240,13 @@ function Hero() {
           to make every moment unforgettable.
         </p>
 
-        <a
-          href="/shop"
+        <button
+          type="button"
+          onClick={() => navigate("/shop")}
           className="mt-8 w-fit bg-[#536b50] px-8 py-4 text-xs uppercase tracking-[2px] text-white hover:bg-[#3e543b]"
         >
           Shop Flowers →
-        </a>
+        </button>
       </div>
 
       <div className="min-h-[400px]">

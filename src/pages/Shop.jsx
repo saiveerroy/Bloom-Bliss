@@ -35,8 +35,18 @@ export default function Shop() {
   const [mobileFilters, setMobileFilters] = useState(false);
 
   useEffect(() => {
+  const filters = location.state?.shopFilters;
+
+  if (filters) {
+    setSelectedCategory(filters.selectedCategory || "All");
+    setSelectedOccasion(filters.selectedOccasion || "All");
+    setSelectedBudget(filters.selectedBudget || "All");
+    setSearch(filters.search || "");
+    setSort(filters.sort || "default");
+  } else {
     setSelectedCategory(location.state?.category || "All");
-  }, [location.state]);
+  }
+}, [location.state]);
 
   const categories = [
     ...new Set(
@@ -527,7 +537,19 @@ export default function Shop() {
 
                       <button
                         type="button"
-                        onClick={() => navigate(`/product/${product.id}`)}
+                        onClick={() =>
+                            navigate(`/product/${product.id}`, {
+                              state: { from: "/shop",
+                                shopFilters: {
+                                  selectedCategory,
+                                  selectedOccasion,
+                                  selectedBudget,
+                                  search,
+                                  sort,
+                                },
+                               },
+                            })
+                          }
                         className="h-full w-full"
                       >
 
@@ -566,7 +588,19 @@ export default function Shop() {
 
                       <button
                         type="button"
-                        onClick={() => navigate(`/product/${product.id}`)}
+                        onClick={() =>
+                                navigate(`/product/${product.id}`, {
+                                  state: { from: "/shop",
+                                    shopFilters: {
+                                      selectedCategory,
+                                      selectedOccasion,
+                                      selectedBudget,
+                                      search,
+                                      sort,
+                                    },
+                                   },
+                                })
+                              }
                         className="mt-2 line-clamp-2 text-left font-serif text-base text-[#344333] hover:text-[#c77f82] sm:text-lg"
                       >
                         {product.name}
