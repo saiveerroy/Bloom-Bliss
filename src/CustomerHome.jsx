@@ -3,6 +3,7 @@ import { useInventory } from "./context/InventoryContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { useCart } from "./context/CartContext";
+import ShoppingCart from "./pages/ShoppingCart";
 
 
 // NAVBAR
@@ -597,150 +598,6 @@ function Footer() {
 
 // SHOPPING CART
 
-function ShoppingCart({
-  cart,
-  onClose,
-  onRemove,
-  onIncrease,
-  onDecrease,
-  onCheckout,
-}) {
-  const total = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex justify-end bg-black/40"
-      onClick={onClose}
-    >
-      <div
-        className="h-full w-full max-w-md overflow-y-auto bg-[#fffaf7] p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-
-        <div className="flex items-center justify-between border-b pb-5">
-          <h2 className="font-serif text-2xl">
-            Your Shopping Bag
-          </h2>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-2xl"
-          >
-            ×
-          </button>
-        </div>
-
-        {cart.length === 0 ? (
-          <div className="py-20 text-center">
-            <p className="text-5xl">🛍️</p>
-
-            <h3 className="mt-5 font-serif text-2xl">
-              Your cart is empty
-            </h3>
-
-            <p className="mt-2 text-sm text-gray-500">
-              Add some beautiful flowers!
-            </p>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-6 bg-[#536b50] px-6 py-3 text-white"
-            >
-              Continue Shopping
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="mt-6 space-y-5">
-              {cart.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex gap-4 border-b pb-5"
-                >
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="h-24 w-20 object-cover"
-                  />
-
-                  <div className="flex-1">
-                    <h3 className="font-serif text-lg">
-                      {item.name}
-                    </h3>
-
-                    <p className="mt-1 text-sm text-gray-500">
-                      ₹{item.price.toLocaleString("en-IN")}
-                    </p>
-
-                    <div className="mt-3 flex items-center gap-3">
-
-                      <button
-                        type="button"
-                        onClick={() => onDecrease(item.id)}
-                        className="h-8 w-8 rounded border border-[#536b50] text-lg"
-                      >
-                        −
-                      </button>
-
-                      <span className="text-sm font-semibold">
-                        {item.quantity}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => onIncrease(item.id)}
-                        className="h-8 w-8 rounded border border-[#536b50] text-lg"
-                      >
-                        +
-                      </button>
-
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => onRemove(item.id)}
-                      className="mt-2 text-xs text-red-600 underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
-
-                  <p className="text-sm font-semibold">
-                    ₹{(item.price * item.quantity).toLocaleString("en-IN")}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-8 border-t pt-5">
-              <div className="flex justify-between text-lg font-semibold">
-                <span>Total</span>
-                <span>₹{total.toLocaleString("en-IN")}</span>
-              </div>
-
-              <p className="mt-2 text-xs text-gray-500">
-                Delivery charges will be calculated at checkout.
-              </p>
-
-              <button
-                type="button"
-                onClick={onCheckout}
-                className="mt-6 w-full bg-[#536b50] py-4 text-white hover:bg-[#3e543b]"
-              >
-                Proceed To Checkout
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
 
 
 // MAIN CUSTOMER HOME
@@ -833,6 +690,7 @@ export default function CustomerHome() {
           onIncrease={(id) => increaseQuantity(id, products)}
           onDecrease={decreaseQuantity}
           onCheckout={openCheckout}
+          cartLoading={cartLoading}
         />
       )}
 
@@ -858,7 +716,7 @@ export default function CustomerHome() {
             <p className="mt-3 font-semibold">
               Order ID: {orderSuccess.id}
             </p>
-
++
             <button
               type="button"
               onClick={() => setOrderSuccess(null)}
