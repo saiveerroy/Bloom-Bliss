@@ -55,13 +55,7 @@ export default function Checkout() {
 
     if (loading) return;
 
-    if (cartLoading) {
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          Loading your cart...
-        </div>
-      );
-    }
+    
 
     if (cart.length === 0) {
       setError("Your shopping cart is empty.");
@@ -127,6 +121,16 @@ export default function Checkout() {
       setLoading(false);
     }
   }
+
+  if (cartLoading) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-[#fffaf7]">
+          <p className="font-serif text-xl text-[#536b50]">
+            Loading your cart...
+          </p>
+        </div>
+      );
+    }
 
   if (!user) {
     return (
@@ -318,10 +322,14 @@ export default function Checkout() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || cartLoading}
             className="w-full rounded-lg bg-[#536b50] py-4 text-sm font-semibold uppercase tracking-wider text-white hover:bg-[#3e543b] disabled:opacity-50"
           >
-            {loading ? "Placing Order..." : "Place Order"}
+            {loading
+              ? "Placing Order..."
+              : cartLoading
+              ? "Loading Cart..."
+              : "Place Order"}
           </button>
 
         </form>
